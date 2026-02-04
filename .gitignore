@@ -37,6 +37,7 @@ coverage/
 # Misc
 *.tgz
 CLAUDE.md
+.claude/
 
 # Research (local only)
 research/
