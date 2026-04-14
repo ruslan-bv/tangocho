@@ -65,6 +65,12 @@
     selectedResult = result;
   }
 
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && selectedResult) {
+      selectedResult = null;
+    }
+  }
+
   async function addWord() {
     if (!selectedResult || !selectedDeckId) return;
 
@@ -92,6 +98,8 @@
     }
   }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <div class="add-page">
   <h1>{t('add.title')}</h1>
