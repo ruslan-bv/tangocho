@@ -18,6 +18,7 @@
   let reviewedCount = $state(0);
   let deckId = $state<number | undefined>(undefined);
   let selectingDeck = $state(false);
+  let startedWithCards = $state(false);
 
   const currentCard = $derived(cards[currentIndex]);
   const remainingCards = $derived(cards.length - currentIndex);
@@ -36,6 +37,7 @@
     loading = true;
     selectingDeck = false;
     sessionComplete = false;
+    startedWithCards = false;
     currentIndex = 0;
     showAnswer = false;
     cards = [];
@@ -45,6 +47,7 @@
         // Deck specified in URL - load cards directly
         deckId = Number(deckParamValue);
         cards = await api.getDueCards(deckId);
+        startedWithCards = cards.length > 0;
         if (cards.length === 0) {
           sessionComplete = true;
         }
@@ -146,6 +149,22 @@
         </div>
       {/if}
     </div>
+  {:else if sessionComplete && !startedWithCards}
+    <div class="complete">
+      <div class="complete-icon all-done">—</div>
+      <h1>{t('study.allReviewedTitle')}</h1>
+      <p class="complete-stats">
+        {t('study.allReviewedDesc')}
+      </p>
+      <div class="complete-actions">
+        <Button href={deckId ? `/decks/${deckId}` : '/'} variant="secondary">
+          {deckId ? t('card.backToDeck') : t('study.goHome')}
+        </Button>
+        <Button href={deckId ? `/add?deck=${deckId}` : '/add'} variant="primary">
+          {t('home.addNewWord')}
+        </Button>
+      </div>
+    </div>
   {:else if sessionComplete}
     <div class="complete">
       <div class="complete-icon">✓</div>
@@ -164,6 +183,9 @@
     </div>
   {:else if currentCard}
     <div class="study-header">
+      <Button href={deckId ? `/decks/${deckId}` : '/'} variant="ghost" size="sm">
+        {t('study.endSession')}
+      </Button>
       <span class="progress">
         {t('study.remaining', { count: remainingCards })}
       </span>
@@ -272,9 +294,14 @@
     margin-top: var(--space-6);
   }
 
+  .complete-icon.all-done {
+    background-color: var(--color-accent);
+  }
+
   .study-header {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: var(--space-6);
   }
 
