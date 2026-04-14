@@ -67,6 +67,12 @@
       </Button>
     </div>
   {:else}
+    <div class="back-link">
+      <Button href="/decks" variant="ghost" size="sm">
+        ← {t('decks.backToList')}
+      </Button>
+    </div>
+
     <div class="deck-header">
       <div class="deck-info">
         <h1>{deck.name}</h1>
@@ -155,6 +161,10 @@
   .deck-page {
     max-width: 900px;
     margin: 0 auto;
+  }
+
+  .back-link {
+    margin-bottom: var(--space-4);
   }
 
   .loading, .not-found {
