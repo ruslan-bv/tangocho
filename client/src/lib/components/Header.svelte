@@ -12,16 +12,16 @@
     </a>
 
     <nav class="nav">
-      <a href="/" class:active={$page.url.pathname === '/'}>
+      <a href="/" class:active={$page.url.pathname === '/'} aria-current={$page.url.pathname === '/' ? 'page' : undefined}>
         {t('nav.home')}
       </a>
-      <a href="/decks" class:active={$page.url.pathname.startsWith('/decks')}>
+      <a href="/decks" class:active={$page.url.pathname.startsWith('/decks')} aria-current={$page.url.pathname.startsWith('/decks') ? 'page' : undefined}>
         {t('nav.decks')}
       </a>
-      <a href="/study" class:active={$page.url.pathname.startsWith('/study')}>
+      <a href="/study" class:active={$page.url.pathname.startsWith('/study')} aria-current={$page.url.pathname.startsWith('/study') ? 'page' : undefined}>
         {t('nav.study')}
       </a>
-      <a href="/add" class:active={$page.url.pathname === '/add'}>
+      <a href="/add" class:active={$page.url.pathname === '/add'} aria-current={$page.url.pathname === '/add' ? 'page' : undefined}>
         {t('nav.add')}
       </a>
       <LanguageSwitcher />

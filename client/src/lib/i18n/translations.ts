@@ -20,6 +20,7 @@ export interface Translations {
     addWord: string;
     createNew: string;
     loadFailed: string;
+    back: string;
   };
   toast: {
     wordAdded: string;
@@ -51,8 +52,11 @@ export interface Translations {
     easy: string;
     noCardsTitle: string;
     noCardsDesc: string;
+    allReviewedTitle: string;
+    allReviewedDesc: string;
     selectDeck: string;
     selectDeckDesc: string;
+    endSession: string;
   };
   add: {
     title: string;
@@ -138,6 +142,7 @@ export const en: Translations = {
     addWord: 'Add word',
     createNew: '+ Create New',
     loadFailed: 'Failed to load data',
+    back: 'Back',
   },
   toast: {
     wordAdded: 'Word added successfully',
@@ -169,8 +174,11 @@ export const en: Translations = {
     easy: 'Easy',
     noCardsTitle: 'No cards to review',
     noCardsDesc: 'Try adding some new words',
+    allReviewedTitle: 'All caught up!',
+    allReviewedDesc: 'No cards are due right now. Come back later or add new words.',
     selectDeck: 'Select a Deck',
     selectDeckDesc: 'Choose which deck to study',
+    endSession: 'End Session',
   },
   add: {
     title: 'Add New Word',
@@ -256,6 +264,7 @@ export const ja: Translations = {
     addWord: '単語を追加',
     createNew: '+ 新規作成',
     loadFailed: 'データの読み込みに失敗しました',
+    back: '戻る',
   },
   toast: {
     wordAdded: '単語を追加しました',
@@ -287,8 +296,11 @@ export const ja: Translations = {
     easy: '簡単',
     noCardsTitle: '復習するカードがありません',
     noCardsDesc: '新しい単語を追加してみましょう',
+    allReviewedTitle: '全部復習しました！',
+    allReviewedDesc: '今は復習するカードがありません。後でまた来てください。',
     selectDeck: 'デッキを選択',
     selectDeckDesc: '学習するデッキを選んでください',
+    endSession: '終了する',
   },
   add: {
     title: '新しい単語を追加',
@@ -374,6 +386,7 @@ export const ru: Translations = {
     addWord: 'Добавить слово',
     createNew: '+ Создать',
     loadFailed: 'Не удалось загрузить данные',
+    back: 'Назад',
   },
   toast: {
     wordAdded: 'Слово добавлено',
@@ -405,8 +418,11 @@ export const ru: Translations = {
     easy: 'Легко',
     noCardsTitle: 'Нет карточек для повторения',
     noCardsDesc: 'Попробуйте добавить новые слова',
+    allReviewedTitle: 'Всё повторено!',
+    allReviewedDesc: 'Сейчас нет карточек для повторения. Вернитесь позже или добавьте новые слова.',
     selectDeck: 'Выберите колоду',
     selectDeckDesc: 'Выберите колоду для изучения',
+    endSession: 'Завершить',
   },
   add: {
     title: 'Добавить слово',
