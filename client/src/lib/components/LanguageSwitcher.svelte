@@ -29,9 +29,15 @@
       open = false;
     }
   }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'Escape' && open) {
+      open = false;
+    }
+  }
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window onclick={handleClickOutside} onkeydown={handleKeydown} />
 
 <div class="language-switcher">
   <button
