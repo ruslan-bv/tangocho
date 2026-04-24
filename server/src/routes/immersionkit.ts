@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler.js';
+import { requireAuth } from '../middleware/auth.js';
 import { validateQuery } from '../middleware/validate.js';
 import { immersionKitSentenceProvider } from '../lib/sentences/index.js';
 import { config } from '../config.js';
 
 export const immersionkitRouter = Router();
+
+immersionkitRouter.use(requireAuth);
 
 // Search Immersion Kit for example sentences
 immersionkitRouter.get('/search',
