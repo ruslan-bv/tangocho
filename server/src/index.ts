@@ -2,6 +2,9 @@ import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { initDatabase } from './db/index.js';
+import { authConfig } from './lib/auth/config.js';
+import { attachUser } from './middleware/auth.js';
+import { authRouter } from './routes/auth.js';
 import { decksRouter } from './routes/decks.js';
 import { wordsRouter } from './routes/words.js';
 import { cardsRouter } from './routes/cards.js';
@@ -14,10 +17,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({ origin: authConfig.clientUrl, credentials: true }));
 app.use(express.json());
+app.use(attachUser);
 
 // Routes
+app.use('/api/auth', authRouter);
 app.use('/api/decks', decksRouter);
 app.use('/api/words', wordsRouter);
 app.use('/api/cards', cardsRouter);
