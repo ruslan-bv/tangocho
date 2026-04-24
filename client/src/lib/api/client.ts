@@ -1,4 +1,5 @@
 import type {
+  AuthUser,
   Deck,
   DeckWithStats,
   Card,
@@ -15,9 +16,18 @@ import type {
 
 const API_BASE = '/api';
 
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 class ApiClient {
   private async fetch<T>(path: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...options?.headers
@@ -27,10 +37,33 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      throw new ApiError(error.message || `HTTP ${response.status}`, response.status);
+    }
+
+    if (response.status === 204) {
+      return undefined as T;
     }
 
     return response.json();
+  }
+
+  // Auth
+  async getCurrentUser(): Promise<AuthUser | null> {
+    try {
+      return await this.fetch<AuthUser>('/auth/me');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) return null;
+      throw err;
+    }
+  }
+
+  async logout(): Promise<void> {
+    await this.fetch<void>('/auth/logout', { method: 'POST' });
+  }
+
+  googleLoginUrl(returnTo?: string): string {
+    const qs = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : '';
+    return `${API_BASE}/auth/google${qs}`;
   }
 
   // Decks

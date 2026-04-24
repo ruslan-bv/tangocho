@@ -120,6 +120,17 @@ export interface Translations {
     loadingExamples: string;
     noExamples: string;
   };
+  login: {
+    tagline: string;
+    signInWithGoogle: string;
+    redirecting: string;
+    note: string;
+    error: string;
+  };
+  auth: {
+    signOut: string;
+    loading: string;
+  };
 }
 
 export const en: Translations = {
@@ -241,6 +252,17 @@ export const en: Translations = {
     examples: 'Example Sentences',
     loadingExamples: 'Loading examples...',
     noExamples: 'No example sentences found',
+  },
+  login: {
+    tagline: 'Learn Japanese vocabulary with spaced repetition',
+    signInWithGoogle: 'Sign in with Google',
+    redirecting: 'Redirecting to Google...',
+    note: 'We use Google sign-in to keep your decks private.',
+    error: 'Sign-in failed. Please try again.',
+  },
+  auth: {
+    signOut: 'Sign out',
+    loading: 'Loading account...',
   },
 };
 
@@ -364,6 +386,17 @@ export const ja: Translations = {
     loadingExamples: '例文を読み込み中...',
     noExamples: '例文が見つかりませんでした',
   },
+  login: {
+    tagline: '間隔反復で日本語の語彙を学びましょう',
+    signInWithGoogle: 'Googleでサインイン',
+    redirecting: 'Googleに移動中...',
+    note: 'デッキを安全に保つため、Googleサインインを使用します。',
+    error: 'サインインに失敗しました。もう一度お試しください。',
+  },
+  auth: {
+    signOut: 'サインアウト',
+    loading: 'アカウントを読み込み中...',
+  },
 };
 
 export const ru: Translations = {
@@ -485,6 +518,17 @@ export const ru: Translations = {
     examples: 'Примеры предложений',
     loadingExamples: 'Загрузка примеров...',
     noExamples: 'Примеры не найдены',
+  },
+  login: {
+    tagline: 'Учите японский с интервальным повторением',
+    signInWithGoogle: 'Войти через Google',
+    redirecting: 'Переход в Google...',
+    note: 'Мы используем вход через Google, чтобы ваши колоды оставались приватными.',
+    error: 'Не удалось войти. Попробуйте снова.',
+  },
+  auth: {
+    signOut: 'Выйти',
+    loading: 'Загрузка аккаунта...',
   },
 };
 
