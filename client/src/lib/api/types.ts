@@ -1,3 +1,12 @@
+// Auth types
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  name: string;
+  avatarUrl: string | null;
+}
+
 // Core data types
 
 export interface Word {
