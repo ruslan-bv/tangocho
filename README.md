@@ -39,9 +39,34 @@ npm install
 # Setup database (creates 'tangocho' database)
 npm run db:check
 
+# Configure Google OAuth (see "Authentication" below)
+export GOOGLE_CLIENT_ID=your-client-id
+export GOOGLE_CLIENT_SECRET=your-client-secret
+
 # Start development servers
 npm run dev
 ```
+
+## Authentication
+
+Tangocho uses Google OAuth for sign-in. Each user's decks, words, cards, and
+reviews are scoped to their account.
+
+**Setup**
+
+1. Create an OAuth 2.0 Client in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Add `http://localhost:3000/api/auth/google/callback` as an authorized redirect URI.
+3. Export the credentials before running the server:
+
+   ```bash
+   export GOOGLE_CLIENT_ID=...
+   export GOOGLE_CLIENT_SECRET=...
+   # optional overrides
+   export GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+   export CLIENT_URL=http://localhost:5173
+   ```
+
+Sessions are stored server-side in Postgres and issued via an HTTP-only cookie.
 
 The app will be available at:
 - Frontend: http://localhost:5173
@@ -75,12 +100,17 @@ tangocho/
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/decks` | List all decks |
+| `GET /api/auth/google` | Start Google OAuth flow |
+| `GET /api/auth/me` | Current signed-in user |
+| `POST /api/auth/logout` | End the current session |
+| `GET /api/decks` | List your decks |
 | `POST /api/words` | Add word (auto-fetches data) |
 | `GET /api/study/due` | Get cards due for review |
 | `POST /api/study/review` | Submit review rating |
 | `GET /api/jisho/search?q=` | Search Jisho dictionary |
 | `GET /api/sentences/search?q=` | Search example sentences |
+
+All data endpoints require an authenticated session.
 
 ## External APIs
 
