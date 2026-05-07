@@ -3,11 +3,13 @@ import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { initDatabase } from './db/index.js';
+import { initTokenizer } from './lib/japanese/tokenize.js';
 import { authConfig } from './lib/auth/config.js';
 import { attachUser } from './middleware/auth.js';
 import { authRouter } from './routes/auth.js';
 import { decksRouter } from './routes/decks.js';
 import { wordsRouter } from './routes/words.js';
+import { importRouter } from './routes/import.js';
 import { cardsRouter } from './routes/cards.js';
 import { studyRouter } from './routes/study.js';
 import { jishoRouter } from './routes/jisho.js';
@@ -26,6 +28,7 @@ app.use(attachUser);
 app.use('/api/auth', authRouter);
 app.use('/api/decks', decksRouter);
 app.use('/api/words', wordsRouter);
+app.use('/api/import', importRouter);
 app.use('/api/cards', cardsRouter);
 app.use('/api/study', studyRouter);
 app.use('/api/jisho', jishoRouter);
@@ -54,6 +57,11 @@ async function start() {
   try {
     await initDatabase();
     console.log('Database initialized');
+
+    initTokenizer().then(
+      () => console.log('Japanese tokenizer ready'),
+      (err) => console.error('Tokenizer init failed:', err)
+    );
 
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);

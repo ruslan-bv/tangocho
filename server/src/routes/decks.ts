@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { validateTrimmedBody } from '../middleware/validate.js';
 import { notFound, badRequest, created, noContent } from '../lib/responses.js';
 import { DeckRow, CardWithWordRow, transformDeckRow, transformCardWithWordRow } from '../lib/transformers.js';
+import { userOwnsDeck } from '../lib/decks.js';
 
 export const decksRouter = Router();
 
@@ -56,11 +57,7 @@ decksRouter.get('/:id', asyncHandler(async (req, res) => {
 decksRouter.get('/:id/cards', asyncHandler(async (req, res) => {
   const userId = req.user!.id;
 
-  const owner = await pool.query(
-    'SELECT id FROM decks WHERE id = $1 AND user_id = $2',
-    [req.params.id, userId]
-  );
-  if (owner.rows.length === 0) {
+  if (!(await userOwnsDeck(userId, req.params.id))) {
     return notFound(res, 'Deck');
   }
 

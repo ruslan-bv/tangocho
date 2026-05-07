@@ -81,17 +81,31 @@ class JishoClient {
     return data.data;
   }
 
+  private findBestMatch(
+    results: JishoApiResponse['data'],
+    query: string
+  ): JishoApiResponse['data'][number] | null {
+    if (results.length === 0) return null;
+    return (
+      results.find((r) =>
+        r.japanese.some((j) => j.word === query || j.reading === query)
+      ) ?? results[0]
+    );
+  }
+
+  async getPreview(query: string): Promise<{ meaning: string; reading: string; isCommon: boolean } | null> {
+    const match = this.findBestMatch(await this.search(query), query);
+    if (!match) return null;
+    return {
+      meaning: match.senses[0]?.english_definitions[0] ?? '',
+      reading: match.japanese[0]?.reading ?? '',
+      isCommon: match.is_common,
+    };
+  }
+
   async getWordData(japanese: string): Promise<JishoWord | null> {
-    const results = await this.search(japanese);
-
-    if (results.length === 0) {
-      return null;
-    }
-
-    // Find exact match or use first result
-    const match = results.find(r =>
-      r.japanese.some(j => j.word === japanese || j.reading === japanese)
-    ) || results[0];
+    const match = this.findBestMatch(await this.search(japanese), japanese);
+    if (!match) return null;
 
     const japaneseForm = match.japanese[0];
     const word = japaneseForm.word || japaneseForm.reading;
