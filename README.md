@@ -39,34 +39,25 @@ npm install
 # Setup database (creates 'tangocho' database)
 npm run db:check
 
-# Configure Google OAuth (see "Authentication" below)
-export GOOGLE_CLIENT_ID=your-client-id
-export GOOGLE_CLIENT_SECRET=your-client-secret
-
 # Start development servers
 npm run dev
 ```
 
 ## Authentication
 
-Tangocho uses Google OAuth for sign-in. Each user's decks, words, cards, and
+Tangocho uses email and password sign-in. Each user's decks, words, cards, and
 reviews are scoped to their account.
 
-**Setup**
+- Passwords are hashed with bcrypt (12 rounds) and must be at least 8 characters.
+- Sessions are stored server-side in Postgres and issued via an HTTP-only cookie
+  (`tangocho_session`, 30-day lifetime).
 
-1. Create an OAuth 2.0 Client in the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-2. Add `http://localhost:3000/api/auth/google/callback` as an authorized redirect URI.
-3. Export the credentials before running the server:
+Optional environment overrides:
 
-   ```bash
-   export GOOGLE_CLIENT_ID=...
-   export GOOGLE_CLIENT_SECRET=...
-   # optional overrides
-   export GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
-   export CLIENT_URL=http://localhost:5173
-   ```
-
-Sessions are stored server-side in Postgres and issued via an HTTP-only cookie.
+```bash
+export DATABASE_URL=postgresql://localhost:5432/tangocho  # default shown
+export CLIENT_URL=http://localhost:5173                   # default shown
+```
 
 The app will be available at:
 - Frontend: http://localhost:5173
@@ -100,9 +91,10 @@ tangocho/
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/auth/google` | Start Google OAuth flow |
-| `GET /api/auth/me` | Current signed-in user |
+| `POST /api/auth/register` | Create an account (email + password) |
+| `POST /api/auth/login` | Sign in with email and password |
 | `POST /api/auth/logout` | End the current session |
+| `GET /api/auth/me` | Current signed-in user |
 | `GET /api/decks` | List your decks |
 | `POST /api/words` | Add word (auto-fetches data) |
 | `GET /api/study/due` | Get cards due for review |
