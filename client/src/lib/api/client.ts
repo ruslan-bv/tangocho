@@ -11,7 +11,9 @@ import type {
   CreateDeckRequest,
   ReviewCardRequest,
   JishoSearchResponse,
-  SentencesResponse
+  SentencesResponse,
+  ParseTextResponse,
+  BulkImportResponse
 } from './types';
 
 const API_BASE = '/api';
@@ -153,6 +155,21 @@ class ApiClient {
   // Stats
   async getStudyStats(): Promise<StudyStats> {
     return this.fetch<StudyStats>('/study/stats');
+  }
+
+  // Import from text
+  async parseText(text: string, deckId?: number): Promise<ParseTextResponse> {
+    return this.fetch<ParseTextResponse>('/import/parse', {
+      method: 'POST',
+      body: JSON.stringify({ text, deckId })
+    });
+  }
+
+  async bulkImport(deckId: number, lemmas: string[]): Promise<BulkImportResponse> {
+    return this.fetch<BulkImportResponse>('/import/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ deckId, lemmas })
+    });
   }
 }
 

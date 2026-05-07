@@ -158,3 +158,36 @@ export interface SentencesResponse {
   sentences: SentenceExample[];
   source: 'tatoeba' | 'immersionkit' | 'none';
 }
+
+// Import (text → cards) types
+export interface JishoPreview {
+  meaning: string;
+  reading: string;
+  isCommon: boolean;
+}
+
+export interface ParsedWord {
+  surface: string;
+  lemma: string;
+  reading: string;
+  pos: string;
+  alreadyInDeck: boolean;
+  jishoPreview: JishoPreview | null;
+}
+
+export interface ParseTextResponse {
+  words: ParsedWord[];
+}
+
+export type BulkResultReason = 'word_not_found' | 'already_in_deck' | 'error';
+
+export interface BulkResult {
+  lemma: string;
+  ok: boolean;
+  cardId?: number;
+  reason?: BulkResultReason;
+}
+
+export interface BulkImportResponse {
+  results: BulkResult[];
+}
