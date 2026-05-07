@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { t } from '$lib/i18n';
   import LanguageSwitcher from './LanguageSwitcher.svelte';
+  import ThemeToggle from './ThemeToggle.svelte';
   import { getAuthState, logout } from '$lib/stores/auth.svelte';
 
   const auth = $derived(getAuthState());
@@ -71,6 +72,7 @@
       <a href="/add" class:active={$page.url.pathname === '/add'} aria-current={$page.url.pathname === '/add' ? 'page' : undefined}>
         {t('nav.add')}
       </a>
+      <ThemeToggle />
       <LanguageSwitcher />
 
       {#if auth.status === 'authenticated'}

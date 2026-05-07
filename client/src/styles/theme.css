@@ -77,6 +77,44 @@
   --transition-slow: 400ms ease;
 }
 
+/*
+  Night theme — sumi-e moonlight palette.
+  Activated by setting data-theme="night" on <html>.
+*/
+:root[data-theme='night'] {
+  --color-sumi: #f5f2eb;
+  --color-sumi-light: #c9c6c0;
+  --color-washi: #1a1a1f;
+  --color-washi-dark: #25252b;
+  --color-ai: #5577a8;
+  --color-ai-light: #6e8db8;
+  --color-shu: #d65854;
+  --color-shu-light: #e07570;
+  --color-matcha: #6a8166;
+  --color-kinari: #14141a;
+  --color-kitsune: #e89244;
+
+  --color-background: var(--color-kinari);
+  --color-surface: var(--color-washi);
+  --color-surface-elevated: #22222a;
+  --color-text-primary: var(--color-sumi);
+  --color-text-secondary: #a8a4a0;
+  --color-text-muted: #7a7670;
+  --color-accent: var(--color-ai);
+  --color-accent-hover: var(--color-ai-light);
+  --color-success: var(--color-matcha);
+  --color-error: var(--color-shu);
+  --color-warning: var(--color-kitsune);
+  --color-border: #2e2e36;
+  --color-border-light: #25252b;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
+}
+
 /* Base styles */
 *, *::before, *::after {
   box-sizing: border-box;

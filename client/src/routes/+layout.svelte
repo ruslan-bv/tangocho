@@ -6,6 +6,7 @@
   import Header from '$lib/components/Header.svelte';
   import Toast from '$lib/components/Toast.svelte';
   import { initLocale, t } from '$lib/i18n';
+  import { initTheme } from '$lib/theme/theme.svelte';
   import { getAuthState, refreshAuth } from '$lib/stores/auth.svelte';
 
   let { children } = $props();
@@ -15,6 +16,7 @@
 
   onMount(() => {
     initLocale();
+    initTheme();
     refreshAuth();
   });
 
