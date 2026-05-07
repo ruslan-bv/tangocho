@@ -123,7 +123,7 @@ class JishoClient {
     }));
 
     // Fetch example sentences using the SentenceAggregator (DIP: depends on abstraction)
-    const sentenceResult = await sentenceAggregator.search(word, config.limits.defaultMeanings);
+    const sentenceResult = await sentenceAggregator.search(word, config.limits.savedSentences);
     const sentences = sentenceResult.sentences;
 
     return {

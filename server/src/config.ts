@@ -41,6 +41,8 @@ export const config = {
   limits: {
     defaultSentences: 5,
     maxSentences: 20,
+    /** Sentences embedded in a saved word (used at word-creation time) */
+    savedSentences: 10,
     defaultMeanings: 10,
     dueCardsLimit: 50,
   },

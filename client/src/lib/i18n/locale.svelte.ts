@@ -2,7 +2,7 @@ import { translations, type Locale } from './translations';
 
 // Constants must be defined before use in getInitialLocale()
 const LOCALES: Locale[] = ['ja', 'en', 'ru'];
-const DEFAULT_LOCALE: Locale = 'ja';
+const DEFAULT_LOCALE: Locale = 'en';
 
 function isValidLocale(value: string | null): value is Locale {
   return value === 'en' || value === 'ja' || value === 'ru';
