@@ -61,9 +61,18 @@ class ApiClient {
     await this.fetch<void>('/auth/logout', { method: 'POST' });
   }
 
-  googleLoginUrl(returnTo?: string): string {
-    const qs = returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : '';
-    return `${API_BASE}/auth/google${qs}`;
+  async login(email: string, password: string): Promise<AuthUser> {
+    return this.fetch<AuthUser>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+  }
+
+  async register(email: string, password: string, name?: string): Promise<AuthUser> {
+    return this.fetch<AuthUser>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name })
+    });
   }
 
   // Decks

@@ -4,29 +4,71 @@
   import { goto } from '$app/navigation';
   import { t } from '$lib/i18n';
   import Button from '$lib/components/Button.svelte';
-  import { getAuthState, startGoogleLogin } from '$lib/stores/auth.svelte';
+  import { ApiError } from '$lib/api/client';
+  import {
+    getAuthState,
+    loginWithEmail,
+    registerWithEmail,
+  } from '$lib/stores/auth.svelte';
 
-  let signingIn = $state(false);
+  type Mode = 'signIn' | 'register';
+  let mode = $state<Mode>('signIn');
+  let email = $state('');
+  let password = $state('');
+  let name = $state('');
+  let submitting = $state(false);
+  let error = $state<string | null>(null);
 
   const auth = $derived(getAuthState());
-  const errorParam = $derived($page.url.searchParams.get('error'));
 
   onMount(() => {
-    if (auth.status === 'authenticated') {
-      goto('/');
-    }
+    if (auth.status === 'authenticated') goto('/');
   });
 
   $effect(() => {
-    if (auth.status === 'authenticated') {
-      goto('/');
-    }
+    if (auth.status === 'authenticated') goto('/');
   });
 
-  function handleSignIn() {
-    signingIn = true;
-    const returnTo = $page.url.searchParams.get('returnTo') || '/';
-    startGoogleLogin(returnTo);
+  function returnTo(): string {
+    const candidate = $page.url.searchParams.get('returnTo') || '/';
+    return candidate.startsWith('/') && !candidate.startsWith('//') ? candidate : '/';
+  }
+
+  function toggleMode() {
+    mode = mode === 'signIn' ? 'register' : 'signIn';
+    error = null;
+  }
+
+  async function handleSubmit(event: Event) {
+    event.preventDefault();
+    if (submitting) return;
+    error = null;
+    submitting = true;
+    try {
+      if (mode === 'signIn') {
+        await loginWithEmail(email, password);
+      } else {
+        await registerWithEmail(email, password, name || undefined);
+      }
+      goto(returnTo());
+    } catch (err) {
+      error = mapError(err);
+    } finally {
+      submitting = false;
+    }
+  }
+
+  function mapError(err: unknown): string {
+    if (err instanceof ApiError) {
+      if (err.status === 401) return t('login.invalidCredentials');
+      if (err.status === 409) return t('login.emailExists');
+      if (err.status === 400) {
+        const msg = err.message.toLowerCase();
+        if (msg.includes('email')) return t('login.invalidEmail');
+        if (msg.includes('password')) return t('login.passwordTooShort');
+      }
+    }
+    return t('login.error');
   }
 </script>
 
@@ -35,13 +77,62 @@
     <h1 class="login-kanji">単語帳</h1>
     <p class="tagline">{t('login.tagline')}</p>
 
-    {#if errorParam}
-      <div class="error">{t('login.error')}</div>
+    <h2 class="mode-title">
+      {mode === 'signIn' ? t('login.modeSignIn') : t('login.modeRegister')}
+    </h2>
+
+    {#if error}
+      <div class="error" role="alert">{error}</div>
     {/if}
 
-    <Button variant="primary" size="lg" onclick={handleSignIn} disabled={signingIn}>
-      {signingIn ? t('login.redirecting') : t('login.signInWithGoogle')}
-    </Button>
+    <form class="form" onsubmit={handleSubmit}>
+      <label class="field">
+        <span class="label">{t('login.emailLabel')}</span>
+        <input
+          type="email"
+          autocomplete="email"
+          required
+          bind:value={email}
+          placeholder={t('login.emailPlaceholder')}
+        />
+      </label>
+
+      <label class="field">
+        <span class="label">{t('login.passwordLabel')}</span>
+        <input
+          type="password"
+          autocomplete={mode === 'signIn' ? 'current-password' : 'new-password'}
+          required
+          minlength={mode === 'register' ? 8 : undefined}
+          bind:value={password}
+          placeholder={t('login.passwordPlaceholder')}
+        />
+      </label>
+
+      {#if mode === 'register'}
+        <label class="field">
+          <span class="label">{t('login.nameLabel')}</span>
+          <input
+            type="text"
+            autocomplete="nickname"
+            bind:value={name}
+            placeholder={t('login.namePlaceholder')}
+          />
+        </label>
+      {/if}
+
+      <Button variant="primary" size="lg" type="submit" disabled={submitting}>
+        {#if submitting}
+          {mode === 'signIn' ? t('login.submittingSignIn') : t('login.submittingRegister')}
+        {:else}
+          {mode === 'signIn' ? t('login.submitSignIn') : t('login.submitRegister')}
+        {/if}
+      </Button>
+    </form>
+
+    <button type="button" class="switch" onclick={toggleMode}>
+      {mode === 'signIn' ? t('login.switchToRegister') : t('login.switchToSignIn')}
+    </button>
 
     <p class="note">{t('login.note')}</p>
   </div>
@@ -82,6 +173,12 @@
     margin: 0;
   }
 
+  .mode-title {
+    font-size: var(--text-lg);
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+
   .error {
     background-color: color-mix(in srgb, var(--color-error) 10%, transparent);
     border: 1px solid var(--color-error);
@@ -89,6 +186,54 @@
     padding: var(--space-3);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
+  }
+
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    text-align: left;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .label {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .field input {
+    font: inherit;
+    color: var(--color-text-primary);
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .field input:focus {
+    outline: 2px solid var(--color-accent, var(--color-text-primary));
+    outline-offset: 1px;
+  }
+
+  .switch {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+  }
+
+  .switch:hover {
+    color: var(--color-text-primary);
   }
 
   .note {

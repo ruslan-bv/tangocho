@@ -1,85 +1,116 @@
 import { Router } from 'express';
-import { randomBytes } from 'crypto';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
-import { authConfig, assertGoogleAuthConfigured } from '../lib/auth/config.js';
+import { authConfig } from '../lib/auth/config.js';
 import { clearCookie, parseCookies, setCookie } from '../lib/auth/cookies.js';
 import {
-  buildAuthorizeUrl,
-  exchangeCodeForToken,
-  fetchUserInfo,
-  upsertGoogleUser,
-} from '../lib/auth/google.js';
-import {
-  createSession,
-  deleteSession,
-} from '../lib/auth/sessions.js';
+  hashPassword,
+  verifyPassword,
+  isValidEmail,
+  MIN_PASSWORD_LENGTH,
+} from '../lib/auth/passwords.js';
+import { pool, ensureDefaultDeck } from '../db/index.js';
+import { createSession, deleteSession } from '../lib/auth/sessions.js';
 
 export const authRouter = Router();
 
-authRouter.get('/google', asyncHandler(async (req, res) => {
-  assertGoogleAuthConfigured();
+interface CredentialsBody {
+  email?: unknown;
+  password?: unknown;
+  name?: unknown;
+}
 
-  const state = randomBytes(24).toString('hex');
-  setCookie(res, authConfig.csrf.cookieName, state, {
-    maxAgeMs: authConfig.csrf.maxAgeMs,
-    secure: authConfig.session.secure,
-    sameSite: 'lax',
-  });
+function parseCredentials(body: CredentialsBody): { email: string; password: string; name: string } | null {
+  if (!body || typeof body !== 'object') return null;
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  const password = typeof body.password === 'string' ? body.password : '';
+  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  if (!email || !password) return null;
+  return { email, password, name };
+}
 
-  const returnTo = typeof req.query.returnTo === 'string' ? req.query.returnTo : '';
-  if (returnTo) {
-    setCookie(res, 'tangocho_return_to', returnTo, {
-      maxAgeMs: authConfig.csrf.maxAgeMs,
-      secure: authConfig.session.secure,
-      sameSite: 'lax',
-    });
-  }
-
-  res.redirect(buildAuthorizeUrl(state));
-}));
-
-authRouter.get('/google/callback', asyncHandler(async (req, res) => {
-  assertGoogleAuthConfigured();
-
-  const { code, state, error } = req.query;
-  const cookies = parseCookies(req);
-  const expectedState = cookies[authConfig.csrf.cookieName];
-  const returnTo = cookies['tangocho_return_to'] || '/';
-
-  clearCookie(res, authConfig.csrf.cookieName);
-  clearCookie(res, 'tangocho_return_to');
-
-  if (error) {
-    return redirectToClient(res, `/login?error=${encodeURIComponent(String(error))}`);
-  }
-
-  if (!code || typeof code !== 'string') {
-    return redirectToClient(res, '/login?error=missing_code');
-  }
-
-  if (!state || typeof state !== 'string' || state !== expectedState) {
-    return redirectToClient(res, '/login?error=invalid_state');
-  }
-
-  const tokenResponse = await exchangeCodeForToken(code);
-  const userInfo = await fetchUserInfo(tokenResponse.access_token);
-
-  if (!userInfo.email) {
-    return redirectToClient(res, '/login?error=missing_email');
-  }
-
-  const userId = await upsertGoogleUser(userInfo);
-  const sessionToken = await createSession(userId);
-
-  setCookie(res, authConfig.session.cookieName, sessionToken, {
+function issueSession(res: import('express').Response, token: string): void {
+  setCookie(res, authConfig.session.cookieName, token, {
     maxAgeMs: authConfig.session.maxAgeMs,
     secure: authConfig.session.secure,
     sameSite: 'lax',
   });
+}
 
-  const safePath = returnTo.startsWith('/') && !returnTo.startsWith('//') ? returnTo : '/';
-  redirectToClient(res, safePath);
+authRouter.post('/register', asyncHandler(async (req, res) => {
+  const creds = parseCredentials(req.body);
+  if (!creds) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+  if (!isValidEmail(creds.email)) {
+    return res.status(400).json({ message: 'Invalid email address' });
+  }
+  if (creds.password.length < MIN_PASSWORD_LENGTH) {
+    return res.status(400).json({
+      message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+    });
+  }
+
+  const passwordHash = await hashPassword(creds.password);
+  const displayName = creds.name || creds.email.split('@')[0];
+
+  let userId: number;
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO users (email, password_hash, name)
+       VALUES ($1, $2, $3)
+       RETURNING id`,
+      [creds.email, passwordHash, displayName]
+    );
+    userId = rows[0].id as number;
+  } catch (err: unknown) {
+    if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
+      return res.status(409).json({ message: 'An account with this email already exists' });
+    }
+    throw err;
+  }
+
+  await ensureDefaultDeck(userId);
+  const token = await createSession(userId);
+  issueSession(res, token);
+
+  res.status(201).json({
+    id: userId,
+    email: creds.email,
+    name: displayName,
+    avatarUrl: null,
+  });
+}));
+
+authRouter.post('/login', asyncHandler(async (req, res) => {
+  const creds = parseCredentials(req.body);
+  if (!creds) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+
+  const { rows } = await pool.query(
+    'SELECT id, email, name, avatar_url, password_hash FROM users WHERE email = $1',
+    [creds.email]
+  );
+  const row = rows[0];
+
+  // Run verifyPassword even if no row, to keep timing similar.
+  const dummyHash = '$2b$12$0000000000000000000000000000000000000000000000000000';
+  const ok = await verifyPassword(creds.password, row?.password_hash ?? dummyHash);
+
+  if (!row || !ok) {
+    return res.status(401).json({ message: 'Invalid email or password' });
+  }
+
+  const token = await createSession(row.id);
+  issueSession(res, token);
+
+  res.json({
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    avatarUrl: row.avatar_url,
+  });
 }));
 
 authRouter.get('/me', requireAuth, (req, res) => {
@@ -99,8 +130,3 @@ authRouter.post('/logout', asyncHandler(async (req, res) => {
   clearCookie(res, authConfig.session.cookieName);
   res.status(204).send();
 }));
-
-function redirectToClient(res: import('express').Response, path: string): void {
-  const base = authConfig.clientUrl.replace(/\/$/, '');
-  res.redirect(`${base}${path.startsWith('/') ? path : `/${path}`}`);
-}

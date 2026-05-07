@@ -4,7 +4,6 @@ import { authConfig } from './config.js';
 
 export interface SessionUser {
   id: number;
-  googleId: string;
   email: string;
   name: string;
   avatarUrl: string | null;
@@ -26,7 +25,7 @@ export async function createSession(userId: number): Promise<string> {
 
 export async function getSessionUser(token: string): Promise<SessionUser | null> {
   const { rows } = await pool.query(
-    `SELECT u.id, u.google_id, u.email, u.name, u.avatar_url
+    `SELECT u.id, u.email, u.name, u.avatar_url
      FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.id = $1 AND s.expires_at > NOW()`,
@@ -36,7 +35,6 @@ export async function getSessionUser(token: string): Promise<SessionUser | null>
   if (!row) return null;
   return {
     id: row.id,
-    googleId: row.google_id,
     email: row.email,
     name: row.name,
     avatarUrl: row.avatar_url,

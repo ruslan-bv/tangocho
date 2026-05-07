@@ -9,9 +9,9 @@ export async function initDatabase() {
     -- Users table
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
-      google_id TEXT UNIQUE NOT NULL,
       email TEXT UNIQUE NOT NULL,
-      name TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      name TEXT NOT NULL DEFAULT '',
       avatar_url TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()

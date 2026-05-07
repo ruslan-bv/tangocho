@@ -37,6 +37,18 @@ export async function logout(): Promise<void> {
   }
 }
 
-export function startGoogleLogin(returnTo?: string): void {
-  window.location.href = api.googleLoginUrl(returnTo);
+export async function loginWithEmail(email: string, password: string): Promise<AuthUser> {
+  const user = await api.login(email, password);
+  state = { status: 'authenticated', user };
+  return user;
+}
+
+export async function registerWithEmail(
+  email: string,
+  password: string,
+  name?: string
+): Promise<AuthUser> {
+  const user = await api.register(email, password, name);
+  state = { status: 'authenticated', user };
+  return user;
 }

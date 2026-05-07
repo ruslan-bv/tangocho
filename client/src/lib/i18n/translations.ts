@@ -122,14 +122,34 @@ export interface Translations {
   };
   login: {
     tagline: string;
-    signInWithGoogle: string;
-    redirecting: string;
+    modeSignIn: string;
+    modeRegister: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    passwordLabel: string;
+    passwordPlaceholder: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    submitSignIn: string;
+    submitRegister: string;
+    submittingSignIn: string;
+    submittingRegister: string;
+    switchToRegister: string;
+    switchToSignIn: string;
     note: string;
     error: string;
+    invalidCredentials: string;
+    emailExists: string;
+    passwordTooShort: string;
+    invalidEmail: string;
   };
   auth: {
     signOut: string;
     loading: string;
+  };
+  theme: {
+    toLight: string;
+    toNight: string;
   };
 }
 
@@ -255,14 +275,34 @@ export const en: Translations = {
   },
   login: {
     tagline: 'Learn Japanese vocabulary with spaced repetition',
-    signInWithGoogle: 'Sign in with Google',
-    redirecting: 'Redirecting to Google...',
-    note: 'We use Google sign-in to keep your decks private.',
-    error: 'Sign-in failed. Please try again.',
+    modeSignIn: 'Sign in',
+    modeRegister: 'Create account',
+    emailLabel: 'Email',
+    emailPlaceholder: 'you@example.com',
+    passwordLabel: 'Password',
+    passwordPlaceholder: 'At least 8 characters',
+    nameLabel: 'Display name',
+    namePlaceholder: 'Optional',
+    submitSignIn: 'Sign in',
+    submitRegister: 'Create account',
+    submittingSignIn: 'Signing in...',
+    submittingRegister: 'Creating account...',
+    switchToRegister: "Don't have an account? Create one",
+    switchToSignIn: 'Already have an account? Sign in',
+    note: 'Your decks stay private to your account.',
+    error: 'Something went wrong. Please try again.',
+    invalidCredentials: 'Invalid email or password.',
+    emailExists: 'An account with this email already exists.',
+    passwordTooShort: 'Password must be at least 8 characters.',
+    invalidEmail: 'Please enter a valid email address.',
   },
   auth: {
     signOut: 'Sign out',
     loading: 'Loading account...',
+  },
+  theme: {
+    toLight: 'Switch to light theme',
+    toNight: 'Switch to night theme',
   },
 };
 
@@ -388,14 +428,34 @@ export const ja: Translations = {
   },
   login: {
     tagline: '間隔反復で日本語の語彙を学びましょう',
-    signInWithGoogle: 'Googleでサインイン',
-    redirecting: 'Googleに移動中...',
-    note: 'デッキを安全に保つため、Googleサインインを使用します。',
-    error: 'サインインに失敗しました。もう一度お試しください。',
+    modeSignIn: 'サインイン',
+    modeRegister: 'アカウント作成',
+    emailLabel: 'メールアドレス',
+    emailPlaceholder: 'you@example.com',
+    passwordLabel: 'パスワード',
+    passwordPlaceholder: '8文字以上',
+    nameLabel: '表示名',
+    namePlaceholder: '任意',
+    submitSignIn: 'サインイン',
+    submitRegister: '作成する',
+    submittingSignIn: 'サインイン中...',
+    submittingRegister: '作成中...',
+    switchToRegister: 'アカウントをお持ちでないですか？作成する',
+    switchToSignIn: 'すでにアカウントをお持ちですか？サインイン',
+    note: 'デッキはアカウントごとに非公開で保管されます。',
+    error: '問題が発生しました。もう一度お試しください。',
+    invalidCredentials: 'メールアドレスまたはパスワードが正しくありません。',
+    emailExists: 'このメールアドレスのアカウントは既に存在します。',
+    passwordTooShort: 'パスワードは8文字以上必要です。',
+    invalidEmail: '有効なメールアドレスを入力してください。',
   },
   auth: {
     signOut: 'サインアウト',
     loading: 'アカウントを読み込み中...',
+  },
+  theme: {
+    toLight: '昼テーマに切り替え',
+    toNight: '夜テーマに切り替え',
   },
 };
 
@@ -521,14 +581,34 @@ export const ru: Translations = {
   },
   login: {
     tagline: 'Учите японский с интервальным повторением',
-    signInWithGoogle: 'Войти через Google',
-    redirecting: 'Переход в Google...',
-    note: 'Мы используем вход через Google, чтобы ваши колоды оставались приватными.',
-    error: 'Не удалось войти. Попробуйте снова.',
+    modeSignIn: 'Войти',
+    modeRegister: 'Регистрация',
+    emailLabel: 'Электронная почта',
+    emailPlaceholder: 'you@example.com',
+    passwordLabel: 'Пароль',
+    passwordPlaceholder: 'Минимум 8 символов',
+    nameLabel: 'Отображаемое имя',
+    namePlaceholder: 'Необязательно',
+    submitSignIn: 'Войти',
+    submitRegister: 'Создать аккаунт',
+    submittingSignIn: 'Вход...',
+    submittingRegister: 'Создание...',
+    switchToRegister: 'Нет аккаунта? Создать',
+    switchToSignIn: 'Уже есть аккаунт? Войти',
+    note: 'Колоды остаются приватными в рамках вашего аккаунта.',
+    error: 'Что-то пошло не так. Попробуйте снова.',
+    invalidCredentials: 'Неверная почта или пароль.',
+    emailExists: 'Аккаунт с такой почтой уже существует.',
+    passwordTooShort: 'Пароль должен быть не короче 8 символов.',
+    invalidEmail: 'Введите корректный email.',
   },
   auth: {
     signOut: 'Выйти',
     loading: 'Загрузка аккаунта...',
+  },
+  theme: {
+    toLight: 'Светлая тема',
+    toNight: 'Тёмная тема',
   },
 };
 
