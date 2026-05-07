@@ -6,6 +6,7 @@ export interface Translations {
     decks: string;
     study: string;
     add: string;
+    import: string;
   };
   common: {
     loading: string;
@@ -151,6 +152,29 @@ export interface Translations {
     toLight: string;
     toNight: string;
   };
+  import: {
+    title: string;
+    description: string;
+    textareaLabel: string;
+    textareaPlaceholder: string;
+    targetDeck: string;
+    parse: string;
+    parsing: string;
+    reparse: string;
+    noWordsFound: string;
+    parseError: string;
+    foundCount: string;
+    selectAll: string;
+    selectNone: string;
+    alreadyInDeck: string;
+    create: string;
+    creating: string;
+    createdCount: string;
+    createFailed: string;
+    skippedCount: string;
+    textTooLong: string;
+    needDeck: string;
+  };
 }
 
 export const en: Translations = {
@@ -159,6 +183,7 @@ export const en: Translations = {
     decks: 'Decks',
     study: 'Study',
     add: 'Add',
+    import: 'Import',
   },
   common: {
     loading: 'Loading...',
@@ -304,6 +329,29 @@ export const en: Translations = {
     toLight: 'Switch to light theme',
     toNight: 'Switch to night theme',
   },
+  import: {
+    title: 'Import from Text',
+    description: 'Paste Japanese text. We will extract content words (nouns, verbs, adjectives) and turn each one into a flash card.',
+    textareaLabel: 'Japanese text',
+    textareaPlaceholder: 'Paste a sentence, paragraph, or longer passage in Japanese...',
+    targetDeck: 'Add to deck:',
+    parse: 'Extract Words',
+    parsing: 'Extracting...',
+    reparse: 'Re-extract',
+    noWordsFound: 'No content words found in this text.',
+    parseError: 'Failed to extract words. Please try again.',
+    foundCount: 'Found {count} words',
+    selectAll: 'Select all',
+    selectNone: 'Select none',
+    alreadyInDeck: 'Already in deck',
+    create: 'Create {count} cards',
+    creating: 'Creating cards...',
+    createdCount: 'Created {count} cards',
+    createFailed: 'Failed to create cards',
+    skippedCount: '{count} skipped',
+    textTooLong: 'Text is too long (max 5000 characters)',
+    needDeck: 'Choose a deck first',
+  },
 };
 
 export const ja: Translations = {
@@ -312,6 +360,7 @@ export const ja: Translations = {
     decks: 'デッキ',
     study: '学習',
     add: '追加',
+    import: '取り込み',
   },
   common: {
     loading: '読み込み中...',
@@ -457,6 +506,29 @@ export const ja: Translations = {
     toLight: '昼テーマに切り替え',
     toNight: '夜テーマに切り替え',
   },
+  import: {
+    title: 'テキストから取り込み',
+    description: '日本語のテキストを貼り付けてください。名詞・動詞・形容詞を抽出してそれぞれフラッシュカードを作成します。',
+    textareaLabel: '日本語のテキスト',
+    textareaPlaceholder: '日本語の文章や段落を貼り付けてください...',
+    targetDeck: '追加先のデッキ：',
+    parse: '単語を抽出',
+    parsing: '抽出中...',
+    reparse: '再抽出',
+    noWordsFound: 'このテキストから単語を抽出できませんでした。',
+    parseError: '抽出に失敗しました。もう一度お試しください。',
+    foundCount: '{count}個の単語が見つかりました',
+    selectAll: 'すべて選択',
+    selectNone: 'すべて解除',
+    alreadyInDeck: 'デッキに既存',
+    create: '{count}枚のカードを作成',
+    creating: '作成中...',
+    createdCount: '{count}枚のカードを作成しました',
+    createFailed: 'カードの作成に失敗しました',
+    skippedCount: '{count}件スキップ',
+    textTooLong: 'テキストが長すぎます（最大5000文字）',
+    needDeck: 'デッキを選択してください',
+  },
 };
 
 export const ru: Translations = {
@@ -465,6 +537,7 @@ export const ru: Translations = {
     decks: 'Колоды',
     study: 'Учить',
     add: 'Добавить',
+    import: 'Импорт',
   },
   common: {
     loading: 'Загрузка...',
@@ -609,6 +682,29 @@ export const ru: Translations = {
   theme: {
     toLight: 'Светлая тема',
     toNight: 'Тёмная тема',
+  },
+  import: {
+    title: 'Импорт из текста',
+    description: 'Вставьте японский текст. Мы извлечём знаменательные слова (существительные, глаголы, прилагательные) и создадим карточку для каждого.',
+    textareaLabel: 'Японский текст',
+    textareaPlaceholder: 'Вставьте предложение, абзац или более длинный отрывок на японском...',
+    targetDeck: 'Добавить в колоду:',
+    parse: 'Извлечь слова',
+    parsing: 'Извлечение...',
+    reparse: 'Извлечь снова',
+    noWordsFound: 'В тексте не найдено знаменательных слов.',
+    parseError: 'Не удалось извлечь слова. Попробуйте ещё раз.',
+    foundCount: 'Найдено слов: {count}',
+    selectAll: 'Выбрать все',
+    selectNone: 'Снять выбор',
+    alreadyInDeck: 'Уже в колоде',
+    create: 'Создать карточек: {count}',
+    creating: 'Создание...',
+    createdCount: 'Создано карточек: {count}',
+    createFailed: 'Не удалось создать карточки',
+    skippedCount: 'Пропущено: {count}',
+    textTooLong: 'Текст слишком длинный (максимум 5000 символов)',
+    needDeck: 'Сначала выберите колоду',
   },
 };
 

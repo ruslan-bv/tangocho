@@ -72,6 +72,9 @@
       <a href="/add" class:active={$page.url.pathname === '/add'} aria-current={$page.url.pathname === '/add' ? 'page' : undefined}>
         {t('nav.add')}
       </a>
+      <a href="/import" class:active={$page.url.pathname === '/import'} aria-current={$page.url.pathname === '/import' ? 'page' : undefined}>
+        {t('nav.import')}
+      </a>
       <ThemeToggle />
       <LanguageSwitcher />
 
