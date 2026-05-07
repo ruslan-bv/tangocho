@@ -39,6 +39,10 @@ npm install
 # Setup database (creates 'tangocho' database)
 npm run db:check
 
+# Configure server environment
+cp server/.env.example server/.env
+# then edit server/.env to set DATABASE_URL with your Postgres credentials
+
 # Start development servers
 npm run dev
 ```
@@ -52,11 +56,12 @@ reviews are scoped to their account.
 - Sessions are stored server-side in Postgres and issued via an HTTP-only cookie
   (`tangocho_session`, 30-day lifetime).
 
-Optional environment overrides:
+Server environment is loaded from `server/.env` (see `server/.env.example`):
 
-```bash
-export DATABASE_URL=postgresql://localhost:5432/tangocho  # default shown
-export CLIENT_URL=http://localhost:5173                   # default shown
+```
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/tangocho
+# CLIENT_URL=http://localhost:5173   # optional, default shown
+# PORT=3000                          # optional, default shown
 ```
 
 The app will be available at:
