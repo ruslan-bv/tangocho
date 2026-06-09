@@ -12,7 +12,8 @@
   let cards = $state<CardWithWord[]>([]);
   let loading = $state(true);
   let deleting = $state(false);
-  let showCards = $state(false);
+  // Cards are the main content of this page, so show them by default.
+  let showCards = $state(true);
 
   const deckId = $derived(Number($page.params.id));
 
@@ -38,9 +39,13 @@
   });
 
   async function deleteDeck() {
-    if (!deck || !confirm(t('decks.deleteConfirm', { name: deck.name }))) {
-      return;
-    }
+    if (!deck) return;
+    // Make the cascade scale explicit when the deck holds cards.
+    const message =
+      deck.totalCards > 0
+        ? t('decks.deleteConfirmWithCount', { name: deck.name, count: deck.totalCards })
+        : t('decks.deleteConfirm', { name: deck.name });
+    if (!confirm(message)) return;
 
     deleting = true;
     try {
@@ -89,7 +94,7 @@
         <Button href="/add?deck={deck.id}" variant="secondary">
           {t('decks.addWordShort')}
         </Button>
-        <Button variant="ghost" onclick={deleteDeck} disabled={deleting}>
+        <Button variant="danger" onclick={deleteDeck} disabled={deleting}>
           {t('common.delete')}
         </Button>
       </div>
@@ -132,6 +137,7 @@
       {:else if showCards}
         <div class="cards-list">
           {#each cards as card}
+            {@const due = isDue(card.dueDate)}
             <a href="/decks/{deckId}/cards/{card.id}" class="card-item">
               <div class="card-word">
                 <span class="japanese">{card.word.japanese}</span>
@@ -142,8 +148,8 @@
               <div class="card-meaning">
                 {card.word.meanings.slice(0, 2).join('; ')}
               </div>
-              <div class="card-status" class:due={isDue(card.dueDate)}>
-                {#if isDue(card.dueDate)}
+              <div class="card-status" class:due>
+                {#if due}
                   {t('common.review')}
                 {:else}
                   {formatDate(card.dueDate)}

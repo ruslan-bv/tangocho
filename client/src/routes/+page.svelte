@@ -36,7 +36,7 @@
     {#if dueCount > 0}
       <div class="due-notice">
         <span class="due-count">{dueCount}</span>
-        <span class="due-text">{t('home.dueCards', { count: dueCount }).replace(String(dueCount), '')}</span>
+        <span class="due-text">{t('home.dueCardsLabel')}</span>
       </div>
       <Button href="/study" variant="primary" size="lg">
         {t('home.startStudy')}

@@ -6,34 +6,47 @@
   interface Props {
     card: CardWithWord;
     showAnswer: boolean;
+    /** When provided and the answer is hidden, the card front becomes a button
+        that reveals the answer (tap/click/Enter/Space). */
+    onReveal?: () => void;
   }
 
-  let { card, showAnswer }: Props = $props();
+  let { card, showAnswer, onReveal }: Props = $props();
 
   const word = $derived(card.word);
   const jlptLevels = $derived(word.jishoData?.jlpt || []);
   const isCommon = $derived(word.jishoData?.isCommon || false);
+  const interactiveFront = $derived(!!onReveal && !showAnswer);
 </script>
 
-<div class="flash-card card" class:revealed={showAnswer}>
-  <div class="card-front">
-    <div class="word-display">
-      <JapaneseWord
-        japanese={word.japanese}
-        reading={word.reading}
-        size="5xl"
-      />
+{#snippet wordDisplay()}
+  <JapaneseWord japanese={word.japanese} reading={word.reading} size="5xl" />
 
-      <div class="word-tags">
-        {#if isCommon}
-          <span class="tag tag--common">{t('wordPreview.common')}</span>
-        {/if}
-        {#each jlptLevels as level}
-          <span class="tag tag--jlpt">{level.toUpperCase()}</span>
-        {/each}
+  <div class="word-tags">
+    {#if isCommon}
+      <span class="tag tag--common">{t('wordPreview.common')}</span>
+    {/if}
+    {#each jlptLevels as level}
+      <span class="tag tag--jlpt">{level.toUpperCase()}</span>
+    {/each}
+  </div>
+{/snippet}
+
+<div class="flash-card card">
+  {#if interactiveFront}
+    <button type="button" class="card-front card-front--reveal" onclick={onReveal}>
+      <div class="word-display">
+        {@render wordDisplay()}
+      </div>
+      <span class="reveal-hint">{t('study.tapToReveal')}</span>
+    </button>
+  {:else}
+    <div class="card-front">
+      <div class="word-display">
+        {@render wordDisplay()}
       </div>
     </div>
-  </div>
+  {/if}
 
   {#if showAnswer}
     <div class="card-back">
@@ -87,7 +100,7 @@
                   {/if}
                 </div>
                 {#if k.strokeCount > 0}
-                  <span class="kanji-strokes">{k.strokeCount} strokes</span>
+                  <span class="kanji-strokes">{t('card.strokes', { count: k.strokeCount })}</span>
                 {/if}
               </div>
             {/each}
@@ -109,8 +122,32 @@
   .card-front {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: var(--space-4);
+  }
+
+  /* Front-as-button: full-bleed tap target that resets native button styling. */
+  .card-front--reveal {
+    width: 100%;
+    background: none;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    padding: var(--space-4);
+    transition: background-color var(--transition-fast);
+  }
+
+  .card-front--reveal:hover {
+    background-color: var(--color-washi);
+  }
+
+  .reveal-hint {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
   }
 
   .word-display {

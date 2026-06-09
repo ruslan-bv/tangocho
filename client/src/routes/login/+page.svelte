@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { tick } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { t } from '$lib/i18n';
@@ -18,15 +18,14 @@
   let name = $state('');
   let submitting = $state(false);
   let error = $state<string | null>(null);
+  let errorEl = $state<HTMLDivElement>();
 
   const auth = $derived(getAuthState());
 
-  onMount(() => {
-    if (auth.status === 'authenticated') goto('/');
-  });
-
+  // Single source of truth for the post-auth destination: whenever we become
+  // authenticated (on mount or after submit) honor ?returnTo.
   $effect(() => {
-    if (auth.status === 'authenticated') goto('/');
+    if (auth.status === 'authenticated') goto(returnTo());
   });
 
   function returnTo(): string {
@@ -50,9 +49,11 @@
       } else {
         await registerWithEmail(email, password, name || undefined);
       }
-      goto(returnTo());
+      // Redirect handled by the $effect above once auth becomes authenticated.
     } catch (err) {
       error = mapError(err);
+      await tick();
+      errorEl?.focus();
     } finally {
       submitting = false;
     }
@@ -82,16 +83,21 @@
     </h2>
 
     {#if error}
-      <div class="error" role="alert">{error}</div>
+      <div class="error" role="alert" tabindex="-1" bind:this={errorEl} id="login-error">
+        {error}
+      </div>
     {/if}
 
-    <form class="form" onsubmit={handleSubmit}>
+    <form class="form" onsubmit={handleSubmit} aria-busy={submitting}>
       <label class="field">
         <span class="label">{t('login.emailLabel')}</span>
         <input
           type="email"
           autocomplete="email"
           required
+          disabled={submitting}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error ? 'login-error' : undefined}
           bind:value={email}
           placeholder={t('login.emailPlaceholder')}
         />
@@ -104,6 +110,9 @@
           autocomplete={mode === 'signIn' ? 'current-password' : 'new-password'}
           required
           minlength={mode === 'register' ? 8 : undefined}
+          disabled={submitting}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={error ? 'login-error' : undefined}
           bind:value={password}
           placeholder={t('login.passwordPlaceholder')}
         />
@@ -115,6 +124,7 @@
           <input
             type="text"
             autocomplete="nickname"
+            disabled={submitting}
             bind:value={name}
             placeholder={t('login.namePlaceholder')}
           />
@@ -130,7 +140,7 @@
       </Button>
     </form>
 
-    <button type="button" class="switch" onclick={toggleMode}>
+    <button type="button" class="switch" onclick={toggleMode} disabled={submitting}>
       {mode === 'signIn' ? t('login.switchToRegister') : t('login.switchToSignIn')}
     </button>
 
@@ -140,7 +150,7 @@
 
 <style>
   .login {
-    min-height: calc(100vh - 160px);
+    min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -232,8 +242,18 @@
     padding: 0;
   }
 
-  .switch:hover {
+  .switch:hover:not(:disabled) {
     color: var(--color-text-primary);
+  }
+
+  .switch:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .error:focus {
+    outline: 2px solid var(--color-error);
+    outline-offset: 2px;
   }
 
   .note {

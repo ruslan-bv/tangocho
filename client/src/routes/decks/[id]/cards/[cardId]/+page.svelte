@@ -108,14 +108,14 @@
               <span class="kanji-meaning">{k.meanings.slice(0, 3).join(', ')}</span>
               <div class="kanji-readings">
                 {#if k.readings.onyomi.length > 0}
-                  <span class="reading on">音: {k.readings.onyomi.slice(0, 3).join('、')}</span>
+                  <span class="reading on">{t('card.onReading')}: {k.readings.onyomi.slice(0, 3).join('、')}</span>
                 {/if}
                 {#if k.readings.kunyomi.length > 0}
-                  <span class="reading kun">訓: {k.readings.kunyomi.slice(0, 3).join('、')}</span>
+                  <span class="reading kun">{t('card.kunReading')}: {k.readings.kunyomi.slice(0, 3).join('、')}</span>
                 {/if}
               </div>
               {#if k.strokeCount > 0}
-                <span class="kanji-strokes">{k.strokeCount} strokes</span>
+                <span class="kanji-strokes">{t('card.strokes', { count: k.strokeCount })}</span>
               {/if}
             </div>
           {/each}
@@ -124,7 +124,7 @@
     {/if}
 
     <div class="section">
-      <h2>SRS</h2>
+      <h2>{t('card.srs')}</h2>
       <div class="srs-stats">
         <div class="stat">
           <span class="stat-label">{t('card.dueDate')}</span>

@@ -23,7 +23,14 @@
 </script>
 
 {#if href}
-  <a {href} class="button {variant} {size}" class:disabled>
+  <a
+    href={disabled ? undefined : href}
+    class="button {variant} {size}"
+    class:disabled
+    aria-disabled={disabled ? 'true' : undefined}
+    tabindex={disabled ? -1 : undefined}
+    onclick={onclick}
+  >
     {@render children()}
   </a>
 {:else}

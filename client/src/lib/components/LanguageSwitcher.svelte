@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getLocale, setLocale, getAvailableLocales, type Locale } from '$lib/i18n';
+  import { getLocale, setLocale, getAvailableLocales, t, type Locale } from '$lib/i18n';
 
   const locale = $derived(getLocale());
   const locales = getAvailableLocales();
@@ -44,19 +44,21 @@
     class="current-locale"
     onclick={() => (open = !open)}
     aria-expanded={open}
-    aria-haspopup="listbox"
+    aria-haspopup="true"
+    aria-label={t('a11y.changeLanguage')}
   >
     {localeShort[locale]}
-    <span class="arrow" class:open>{open ? '▲' : '▼'}</span>
+    <span class="arrow" class:open aria-hidden="true">{open ? '▲' : '▼'}</span>
   </button>
 
   {#if open}
-    <ul class="locale-dropdown" role="listbox">
+    <ul class="locale-dropdown">
       {#each locales as loc}
-        <li role="option" aria-selected={loc === locale}>
+        <li>
           <button
             class="locale-option"
             class:active={loc === locale}
+            aria-current={loc === locale ? 'true' : undefined}
             onclick={() => selectLocale(loc)}
           >
             {localeLabels[loc]}

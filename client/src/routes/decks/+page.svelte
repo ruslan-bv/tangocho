@@ -9,17 +9,23 @@
 
   let decks = $state<DeckWithStats[]>([]);
   let loading = $state(true);
+  let loadError = $state(false);
 
-  onMount(async () => {
+  async function load() {
+    loading = true;
+    loadError = false;
     try {
       decks = await api.getDecks();
     } catch (error) {
       console.error('Failed to load decks:', error);
+      loadError = true;
       showError(t('common.loadFailed'));
     } finally {
       loading = false;
     }
-  });
+  }
+
+  onMount(load);
 </script>
 
 <div class="decks-page">
@@ -32,6 +38,14 @@
 
   {#if loading}
     <div class="loading">{t('common.loading')}</div>
+  {:else if loadError}
+    <div class="empty-state">
+      <div class="empty-icon">⚠️</div>
+      <h2>{t('common.loadFailed')}</h2>
+      <Button variant="primary" onclick={load}>
+        {t('common.retry')}
+      </Button>
+    </div>
   {:else if decks.length === 0}
     <div class="empty-state">
       <div class="empty-icon">📚</div>

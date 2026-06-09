@@ -14,7 +14,9 @@
   <div class="deck-header">
     <h3 class="deck-name">{deck.name}</h3>
     {#if deck.dueCards > 0}
-      <span class="tag tag--due due-badge">{deck.dueCards}</span>
+      <span class="tag tag--due due-badge" aria-label={t('decks.dueCardAria', { count: deck.dueCards })}>
+        {deck.dueCards}
+      </span>
     {/if}
   </div>
 

@@ -9,12 +9,14 @@
   let description = $state('');
   let loading = $state(false);
   let error = $state<string | null>(null);
+  let nameInput = $state<HTMLInputElement>();
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
 
     if (!name.trim()) {
       error = t('decks.nameRequired');
+      nameInput?.focus();
       return;
     }
 
@@ -45,8 +47,13 @@
       <input
         id="name"
         type="text"
+        bind:this={nameInput}
         bind:value={name}
         placeholder={t('decks.namePlaceholder')}
+        maxlength="100"
+        required
+        aria-invalid={error ? 'true' : undefined}
+        aria-describedby={error ? 'deck-name-error' : undefined}
         class="input"
       />
     </div>
@@ -58,12 +65,13 @@
         bind:value={description}
         placeholder={t('decks.descPlaceholder')}
         rows="3"
+        maxlength="500"
         class="input"
       ></textarea>
     </div>
 
     {#if error}
-      <p class="error">{error}</p>
+      <p class="error" id="deck-name-error" role="alert">{error}</p>
     {/if}
 
     <div class="form-actions">

@@ -17,6 +17,7 @@
 
   let examples = $state<SentenceExample[]>([]);
   let loadingExamples = $state(false);
+  let examplesError = $state(false);
   let currentAudio = $state<HTMLAudioElement | null>(null);
   let playingIndex = $state<number | null>(null);
 
@@ -37,14 +38,14 @@
     if (!word) return;
 
     loadingExamples = true;
+    examplesError = false;
 
     try {
       const response = await api.searchSentences(word, 5);
       examples = response.sentences || [];
     } catch (e) {
       console.error('Failed to load examples:', e);
-      const message = e instanceof Error ? e.message : 'Failed to load examples';
-      showError(message);
+      examplesError = true;
     } finally {
       loadingExamples = false;
     }
@@ -59,7 +60,7 @@
     playingIndex = null;
   }
 
-  function playAudio(example: SentenceExample, index: number) {
+  async function playAudio(example: SentenceExample, index: number) {
     stopAudio();
 
     if (playingIndex === index || !example.audioUrl) {
@@ -69,9 +70,15 @@
     const audio = new Audio(example.audioUrl);
     audio.onended = stopAudio;
     audio.onerror = stopAudio;
-    audio.play();
     currentAudio = audio;
     playingIndex = index;
+    try {
+      await audio.play();
+    } catch (e) {
+      console.error('Audio playback failed:', e);
+      stopAudio();
+      showError(e instanceof Error ? e.message : t('wordPreview.examplesError'));
+    }
   }
 
   function formatSource(source: string): string {
@@ -143,6 +150,11 @@
 
     {#if loadingExamples}
       <p class="examples-loading">{t('wordPreview.loadingExamples')}</p>
+    {:else if examplesError}
+      <div class="examples-error">
+        <span>{t('wordPreview.examplesError')}</span>
+        <button type="button" class="examples-retry" onclick={loadExamples}>{t('common.retry')}</button>
+      </div>
     {:else if examples.length === 0}
       <p class="examples-empty">{t('wordPreview.noExamples')}</p>
     {:else}
@@ -160,7 +172,7 @@
                 class="audio-btn"
                 class:playing={playingIndex === index}
                 onclick={() => playAudio(example, index)}
-                aria-label={playingIndex === index ? 'Stop' : 'Play'}
+                aria-label={playingIndex === index ? t('wordPreview.stop') : t('wordPreview.play')}
               >
                 {playingIndex === index ? '■' : '▶'}
               </button>
@@ -257,6 +269,29 @@
   .examples-empty {
     font-size: var(--text-sm);
     color: var(--color-text-muted);
+  }
+
+  .examples-error {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-error);
+  }
+
+  .examples-retry {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-1) var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+    cursor: pointer;
+  }
+
+  .examples-retry:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
   }
 
   .examples-list {
@@ -374,9 +409,9 @@
     }
 
     .audio-btn {
-      width: 28px;
-      height: 28px;
-      font-size: 10px;
+      width: 40px;
+      height: 40px;
+      font-size: 12px;
     }
   }
 </style>

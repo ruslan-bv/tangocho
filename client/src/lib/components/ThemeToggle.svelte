@@ -12,6 +12,7 @@
   class="theme-toggle"
   onclick={toggleTheme}
   aria-label={label}
+  aria-pressed={theme === 'night'}
   title={label}
 >
   <span class="glyph" aria-hidden="true">{glyph}</span>
