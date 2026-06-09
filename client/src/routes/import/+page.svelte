@@ -1,10 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { DeckWithStats, ParsedWord } from '$lib/api/types';
+  import type { DeckWithStats, ParsedWord, BulkResult, BulkResultReason } from '$lib/api/types';
   import { api, ApiError } from '$lib/api/client';
   import Button from '$lib/components/Button.svelte';
   import { t } from '$lib/i18n';
   import { showError, showSuccess } from '$lib/stores/toast.svelte';
+
+  const MAX_TEXT = 5000;
+  const BATCH_SIZE = 8; // import in chunks so progress is visible on large sets
 
   let text = $state('');
   let decks = $state<DeckWithStats[]>([]);
@@ -13,9 +16,14 @@
   let creating = $state(false);
   let words = $state<ParsedWord[]>([]);
   let selected = $state<Set<string>>(new Set());
+  // Per-lemma outcome from the last import, so each row can show what happened.
+  let wordStatus = $state<Record<string, 'ok' | BulkResultReason>>({});
+  let importDone = $state(0);
+  let importTotal = $state(0);
 
   const hasParsed = $derived(words.length > 0);
   const selectableCount = $derived(words.filter((w) => !w.alreadyInDeck).length);
+  const alreadyInDeckCount = $derived(words.filter((w) => w.alreadyInDeck).length);
 
   onMount(async () => {
     try {
@@ -38,6 +46,7 @@
     parsing = true;
     words = [];
     selected = new Set();
+    wordStatus = {};
     try {
       const res = await api.parseText(text, selectedDeckId);
       words = res.words;
@@ -71,26 +80,51 @@
     if (!selectedDeckId || selected.size === 0 || creating) return;
 
     creating = true;
-    try {
-      const res = await api.bulkImport(selectedDeckId, Array.from(selected));
-      const ok = res.results.filter((r) => r.ok).length;
-      const skipped = res.results.length - ok;
-      showSuccess(
-        skipped > 0
-          ? `${t('import.createdCount', { count: ok })} · ${t('import.skippedCount', { count: skipped })}`
-          : t('import.createdCount', { count: ok })
-      );
+    const lemmas = Array.from(selected);
+    importTotal = lemmas.length;
+    importDone = 0;
+    const results: BulkResult[] = [];
 
-      const createdLemmas = new Set(res.results.filter((r) => r.ok).map((r) => r.lemma));
-      words = words.map((w) =>
-        createdLemmas.has(w.lemma) ? { ...w, alreadyInDeck: true } : w
-      );
-      selected = new Set();
+    try {
+      // Chunk the request so the progress bar actually moves on large imports.
+      for (let i = 0; i < lemmas.length; i += BATCH_SIZE) {
+        const batch = lemmas.slice(i, i + BATCH_SIZE);
+        const res = await api.bulkImport(selectedDeckId, batch);
+        results.push(...res.results);
+        importDone = Math.min(lemmas.length, i + batch.length);
+      }
+
+      const created = results.filter((r) => r.ok).length;
+      const already = results.filter((r) => !r.ok && r.reason === 'already_in_deck').length;
+      const failed = results.filter((r) => !r.ok && r.reason !== 'already_in_deck').length;
+
+      // Record each outcome so rows can be flagged; keep failures visible/selectable.
+      const status: Record<string, 'ok' | BulkResultReason> = { ...wordStatus };
+      const handled = new Set<string>();
+      for (const r of results) {
+        status[r.lemma] = r.ok ? 'ok' : (r.reason ?? 'error');
+        if (r.ok || r.reason === 'already_in_deck') handled.add(r.lemma);
+      }
+      wordStatus = status;
+      words = words.map((w) => (handled.has(w.lemma) ? { ...w, alreadyInDeck: true } : w));
+
+      const next = new Set(selected);
+      for (const lemma of handled) next.delete(lemma);
+      selected = next;
+
+      const parts = [t('import.createdCount', { count: created })];
+      if (already > 0) parts.push(t('import.alreadyInDeckCount', { count: already }));
+      if (failed > 0) parts.push(t('import.failedCount', { count: failed }));
+      const summary = parts.join(' · ');
+      if (failed > 0 && created === 0) showError(summary);
+      else showSuccess(summary);
     } catch (e) {
       const message = e instanceof Error ? e.message : t('import.createFailed');
       showError(message);
     } finally {
       creating = false;
+      importTotal = 0;
+      importDone = 0;
     }
   }
 </script>
@@ -106,14 +140,17 @@
       bind:value={text}
       placeholder={t('import.textareaPlaceholder')}
       rows="6"
-      maxlength="5000"
+      maxlength={MAX_TEXT}
       disabled={parsing}
     ></textarea>
+    <div class="char-count" class:char-count--max={text.length >= MAX_TEXT}>
+      {t('import.charCount', { count: text.length, max: MAX_TEXT })}
+    </div>
 
     <div class="controls">
       <label class="deck-select">
         <span>{t('import.targetDeck')}</span>
-        <select bind:value={selectedDeckId} disabled={decks.length === 0}>
+        <select bind:value={selectedDeckId} disabled={decks.length === 0 || parsing || creating}>
           {#each decks as deck}
             <option value={deck.id}>{deck.name}</option>
           {/each}
@@ -140,7 +177,12 @@
   {#if hasParsed}
     <div class="results-section card">
       <div class="results-header">
-        <span class="found-count">{t('import.foundCount', { count: words.length })}</span>
+        <span class="found-count">
+          {t('import.foundCount', { count: words.length })}
+          {#if alreadyInDeckCount > 0}
+            · {t('import.alreadyInDeckCount', { count: alreadyInDeckCount })}
+          {/if}
+        </span>
         <div class="bulk-actions">
           <button type="button" class="link" onclick={selectAll} disabled={selectableCount === 0}>
             {t('import.selectAll')}
@@ -173,8 +215,12 @@
               {#if word.jishoPreview}
                 <span class="meaning">{word.jishoPreview.meaning}</span>
               {/if}
-              {#if word.alreadyInDeck}
-                <span class="badge">{t('import.alreadyInDeck')}</span>
+              {#if wordStatus[word.lemma] === 'ok'}
+                <span class="badge badge--added">{t('import.statusAdded')}</span>
+              {:else if wordStatus[word.lemma] === 'already_in_deck' || (word.alreadyInDeck && !wordStatus[word.lemma])}
+                <span class="badge">{t('import.statusSkipped')}</span>
+              {:else if wordStatus[word.lemma]}
+                <span class="badge badge--failed">{t('import.statusFailed')}</span>
               {/if}
             </label>
           </li>
@@ -182,6 +228,20 @@
       </ul>
 
       <div class="submit-row">
+        {#if creating && importTotal > 0}
+          <div
+            class="import-progress"
+            role="progressbar"
+            aria-valuemin="0"
+            aria-valuemax={importTotal}
+            aria-valuenow={importDone}
+          >
+            <div class="progress-track">
+              <div class="progress-fill" style:width="{(importDone / importTotal) * 100}%"></div>
+            </div>
+            <span class="progress-count">{importDone} / {importTotal}</span>
+          </div>
+        {/if}
         <Button
           variant="primary"
           size="lg"
@@ -223,6 +283,19 @@
   .textarea-label {
     font-size: var(--text-sm);
     color: var(--color-text-secondary);
+  }
+
+  .char-count {
+    align-self: flex-end;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    margin-top: calc(var(--space-2) * -1);
+  }
+
+  .char-count--max {
+    color: var(--color-error);
+    font-weight: 600;
   }
 
   textarea {
@@ -385,12 +458,54 @@
     margin-left: auto;
   }
 
+  .badge--added {
+    background-color: var(--color-success);
+    color: #fff;
+  }
+
+  .badge--failed {
+    background-color: var(--color-error);
+    color: #fff;
+  }
+
   .submit-row {
     margin-top: var(--space-5);
     padding-top: var(--space-4);
     border-top: 1px solid var(--color-border-light);
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .import-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .import-progress .progress-track {
+    flex: 1;
+    height: 6px;
+    background-color: var(--color-border-light);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+  }
+
+  .import-progress .progress-fill {
+    height: 100%;
+    background-color: var(--color-accent);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-fast);
+  }
+
+  .progress-count {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   .no-decks {
