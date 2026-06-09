@@ -2,6 +2,8 @@ import 'dotenv/config';
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { initDatabase } from './db/index.js';
 import { initTokenizer } from './lib/japanese/tokenize.js';
 import { authConfig } from './lib/auth/config.js';
@@ -20,9 +22,37 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
+app.use(helmet());
 app.use(cors({ origin: authConfig.clientUrl, credentials: true }));
 app.use(express.json({ limit: '100kb' }));
 app.use(attachUser);
+
+// Rate limits: generous global cap, strict on auth (bcrypt cost),
+// moderate on endpoints that fan out to external APIs
+const globalLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many attempts, please try again later' },
+});
+const upstreamLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests, please slow down' },
+});
+
+app.use('/api', globalLimiter);
+app.use(['/api/auth/login', '/api/auth/register'], authLimiter);
+app.use(['/api/jisho', '/api/sentences', '/api/immersionkit', '/api/import'], upstreamLimiter);
 
 // Routes
 app.use('/api/auth', authRouter);
