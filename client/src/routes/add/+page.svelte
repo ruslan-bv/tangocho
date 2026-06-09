@@ -1,12 +1,11 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
+  import { onMount, tick } from 'svelte';
   import type { JishoSearchResult, DeckWithStats } from '$lib/api/types';
-  import { api } from '$lib/api/client';
+  import { api, ApiError } from '$lib/api/client';
   import Button from '$lib/components/Button.svelte';
   import WordPreview from '$lib/components/WordPreview.svelte';
   import { t } from '$lib/i18n';
-  import { showError, showInfo, showSuccess } from '$lib/stores/toast.svelte';
+  import { showError, showSuccess } from '$lib/stores/toast.svelte';
 
   let searchQuery = $state('');
   let searchResults = $state<JishoSearchResult[]>([]);
@@ -15,8 +14,17 @@
   let selectedDeckId = $state<number | null>(null);
   let loading = $state(false);
   let searching = $state(false);
+  // The query whose results are currently shown \u2014 drives a persistent
+  // "no results" state instead of a toast that disappears.
+  let searchedQuery = $state<string | null>(null);
+  let lastAdded = $state<{ word: string; deckId: number; deckName: string } | null>(null);
 
   let searchTimeout: ReturnType<typeof setTimeout>;
+  let searchSeq = 0; // discard out-of-order responses
+  let searchInput = $state<HTMLInputElement>();
+  let resultEls: HTMLButtonElement[] = [];
+
+  const selectedDeckName = $derived(decks.find((d) => d.id === selectedDeckId)?.name ?? '');
 
   onMount(async () => {
     try {
@@ -26,8 +34,9 @@
       }
     } catch (e) {
       console.error('Failed to load decks:', e);
-      showError('Failed to load decks');
+      showError(t('common.loadFailed'));
     }
+    searchInput?.focus();
   });
 
   // Check if query contains valid characters (letters, numbers, or Japanese)
@@ -39,60 +48,103 @@
     clearTimeout(searchTimeout);
     const trimmed = searchQuery.trim();
     if (trimmed.length < 1 || !hasValidCharacters(trimmed)) {
+      searchSeq++;
       searchResults = [];
+      searchedQuery = null;
+      searching = false;
       return;
     }
 
-    searchTimeout = setTimeout(async () => {
-      searching = true;
-      try {
-        const response = await api.searchJisho(searchQuery);
-        searchResults = response.data;
-        if (searchResults.length === 0) {
-          showInfo(t('add.noResults'));
-        }
-      } catch (e) {
-        console.error('Search failed:', e);
-        const message = e instanceof Error ? e.message : 'Search failed';
-        showError(message);
-      } finally {
-        searching = false;
-      }
-    }, 300);
+    searchTimeout = setTimeout(() => runSearch(trimmed), 300);
+  }
+
+  async function runSearch(query: string) {
+    const seq = ++searchSeq;
+    searching = true;
+    try {
+      const response = await api.searchJisho(query);
+      if (seq !== searchSeq) return; // a newer search superseded this one
+      searchResults = response.data;
+      searchedQuery = query;
+    } catch (e) {
+      if (seq !== searchSeq) return;
+      console.error('Search failed:', e);
+      showError(e instanceof Error ? e.message : t('common.loadFailed'));
+    } finally {
+      if (seq === searchSeq) searching = false;
+    }
+  }
+
+  function clearSearch() {
+    clearTimeout(searchTimeout);
+    searchSeq++;
+    searchQuery = '';
+    searchResults = [];
+    searchedQuery = null;
+    searching = false;
+    searchInput?.focus();
   }
 
   function selectResult(result: JishoSearchResult) {
     selectedResult = result;
+    lastAdded = null;
+  }
+
+  function focusResult(i: number) {
+    resultEls[i]?.focus();
+  }
+
+  function handleInputKeydown(e: KeyboardEvent) {
+    if (e.key === 'ArrowDown' && searchResults.length > 0 && !selectedResult) {
+      e.preventDefault();
+      focusResult(0);
+    }
+  }
+
+  function handleResultKeydown(e: KeyboardEvent, index: number) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusResult(Math.min(index + 1, searchResults.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (index === 0) searchInput?.focus();
+      else focusResult(index - 1);
+    }
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && selectedResult) {
-      selectedResult = null;
-    }
+    if (e.key !== 'Escape') return;
+    if (selectedResult) selectedResult = null;
+    else if (searchQuery) clearSearch();
   }
 
   async function addWord() {
     if (!selectedResult || !selectedDeckId) return;
 
     loading = true;
+    const deckId = selectedDeckId;
+    const deckName = selectedDeckName;
 
     try {
       const japanese = selectedResult.japanese[0]?.word || selectedResult.japanese[0]?.reading;
-      await api.addWord({
-        japanese,
-        deckId: selectedDeckId
-      });
+      await api.addWord({ japanese, deckId });
 
-      // Reset and show success
+      // Stay on the page so the user can keep adding; offer a path to the deck.
+      lastAdded = { word: japanese, deckId, deckName };
       selectedResult = null;
       searchQuery = '';
       searchResults = [];
+      searchedQuery = null;
       showSuccess(t('toast.wordAdded'));
-      goto(`/decks/${selectedDeckId}`);
+      await tick();
+      searchInput?.focus();
     } catch (e) {
       console.error('Failed to add word:', e);
-      const message = e instanceof Error ? e.message : 'Failed to add word';
-      showError(message);
+      if (e instanceof ApiError && e.status === 409) {
+        showError(t('add.alreadyAdded'));
+      } else {
+        showError(e instanceof Error ? e.message : t('common.loadFailed'));
+      }
     } finally {
       loading = false;
     }
@@ -104,26 +156,48 @@
 <div class="add-page">
   <h1>{t('add.title')}</h1>
 
+  {#if lastAdded && !selectedResult && searchResults.length === 0}
+    <div class="added-banner" role="status">
+      <span>{t('toast.wordAdded')} — {lastAdded.word}</span>
+      <a href={`/decks/${lastAdded.deckId}`} class="added-link">{lastAdded.deckName} →</a>
+    </div>
+  {/if}
+
   <div class="search-section">
     <div class="search-box">
       <input
-        type="text"
+        type="search"
+        bind:this={searchInput}
         placeholder={t('add.searchPlaceholder')}
         bind:value={searchQuery}
         oninput={handleSearchInput}
+        onkeydown={handleInputKeydown}
+        autocapitalize="off"
+        autocorrect="off"
+        autocomplete="off"
+        spellcheck="false"
+        aria-label={t('add.title')}
         class="input input--lg search-input"
       />
       {#if searching}
-        <span class="search-spinner">{t('add.searching')}</span>
+        <span class="search-spinner" role="status">{t('add.searching')}</span>
+      {:else if searchQuery}
+        <button type="button" class="search-clear" onclick={clearSearch} aria-label={t('add.clearSearch')}>
+          ×
+        </button>
       {/if}
     </div>
 
     {#if searchResults.length > 0 && !selectedResult}
-      <div class="search-results">
-        {#each searchResults as result}
+      <div class="search-results" role="listbox" aria-label={t('add.title')}>
+        {#each searchResults as result, index}
           <button
             class="result-item"
+            role="option"
+            aria-selected="false"
+            bind:this={resultEls[index]}
             onclick={() => selectResult(result)}
+            onkeydown={(e) => handleResultKeydown(e, index)}
           >
             <span class="result-word">
               {result.japanese[0]?.word || result.japanese[0]?.reading}
@@ -140,6 +214,10 @@
           </button>
         {/each}
       </div>
+    {:else if searchedQuery && !searching && !selectedResult}
+      <div class="state-message state-message--empty state-message--compact no-results">
+        <p>{t('add.noResultsFor', { query: searchedQuery })}</p>
+      </div>
     {/if}
   </div>
 
@@ -155,9 +233,9 @@
       <WordPreview result={selectedResult} />
 
       <div class="add-form">
-        <label class="deck-select">
+        <label class="deck-select" for="add-deck-select">
           <span>{t('add.targetDeck')}</span>
-          <select bind:value={selectedDeckId}>
+          <select id="add-deck-select" bind:value={selectedDeckId}>
             {#each decks as deck}
               <option value={deck.id}>{deck.name}</option>
             {/each}
@@ -206,6 +284,16 @@
     position: relative;
   }
 
+  .search-input {
+    padding-right: var(--space-12);
+  }
+
+  /* Hide the native search clear button; we render our own. */
+  .search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
   .search-spinner {
     position: absolute;
     right: var(--space-4);
@@ -213,6 +301,54 @@
     transform: translateY(-50%);
     color: var(--color-text-muted);
     font-size: var(--text-sm);
+  }
+
+  .search-clear {
+    position: absolute;
+    right: var(--space-3);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: var(--color-washi-dark);
+    color: var(--color-text-secondary);
+    border-radius: var(--radius-full);
+    font-size: var(--text-lg);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .search-clear:hover {
+    color: var(--color-text-primary);
+  }
+
+  .added-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+    padding: var(--space-3) var(--space-4);
+    background-color: color-mix(in srgb, var(--color-success) 12%, transparent);
+    border: 1px solid var(--color-success);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    color: var(--color-text-primary);
+  }
+
+  .added-link {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .no-results {
+    margin-top: var(--space-4);
+    text-align: center;
   }
 
   .search-results {
