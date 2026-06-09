@@ -8,6 +8,12 @@ export interface Translations {
     add: string;
     import: string;
   };
+  a11y: {
+    skipToContent: string;
+    changeLanguage: string;
+    openMenu: string;
+    closeMenu: string;
+  };
   common: {
     loading: string;
     cancel: string;
@@ -22,6 +28,7 @@ export interface Translations {
     createNew: string;
     loadFailed: string;
     back: string;
+    retry: string;
   };
   toast: {
     wordAdded: string;
@@ -34,6 +41,7 @@ export interface Translations {
     welcome: string;
     subtitle: string;
     dueCards: string;
+    dueCardsLabel: string;
     startStudy: string;
     addNewWord: string;
     decks: string;
@@ -58,6 +66,10 @@ export interface Translations {
     selectDeck: string;
     selectDeckDesc: string;
     endSession: string;
+    undo: string;
+    cardProgress: string;
+    studyAgain: string;
+    tapToReveal: string;
   };
   add: {
     title: string;
@@ -71,6 +83,10 @@ export interface Translations {
     createDeckFirst: string;
     createDeck: string;
     noResults: string;
+    noResultsFor: string;
+    alreadyAdded: string;
+    addAnother: string;
+    clearSearch: string;
   };
   decks: {
     title: string;
@@ -95,7 +111,9 @@ export interface Translations {
     hideCards: string;
     noCards: string;
     deleteConfirm: string;
+    deleteConfirmWithCount: string;
     deleteFailed: string;
+    dueCardAria: string;
   };
   flashcard: {
     meanings: string;
@@ -112,6 +130,10 @@ export interface Translations {
     repetitions: string;
     easeFactor: string;
     days: string;
+    srs: string;
+    strokes: string;
+    onReading: string;
+    kunReading: string;
   };
   wordPreview: {
     common: string;
@@ -120,6 +142,9 @@ export interface Translations {
     examples: string;
     loadingExamples: string;
     noExamples: string;
+    examplesError: string;
+    play: string;
+    stop: string;
   };
   login: {
     tagline: string;
@@ -172,8 +197,14 @@ export interface Translations {
     createdCount: string;
     createFailed: string;
     skippedCount: string;
+    failedCount: string;
     textTooLong: string;
     needDeck: string;
+    statusAdded: string;
+    statusSkipped: string;
+    statusFailed: string;
+    alreadyInDeckCount: string;
+    charCount: string;
   };
 }
 
@@ -184,6 +215,12 @@ export const en: Translations = {
     study: 'Study',
     add: 'Add',
     import: 'Import',
+  },
+  a11y: {
+    skipToContent: 'Skip to main content',
+    changeLanguage: 'Change language',
+    openMenu: 'Open menu',
+    closeMenu: 'Close menu',
   },
   common: {
     loading: 'Loading...',
@@ -199,6 +236,7 @@ export const en: Translations = {
     createNew: '+ Create New',
     loadFailed: 'Failed to load data',
     back: 'Back',
+    retry: 'Retry',
   },
   toast: {
     wordAdded: 'Word added successfully',
@@ -211,6 +249,7 @@ export const en: Translations = {
     welcome: 'Welcome',
     subtitle: 'Learn Japanese vocabulary efficiently',
     dueCards: '{count} cards due for review',
+    dueCardsLabel: 'cards due for review',
     startStudy: 'Start Studying',
     addNewWord: 'Add New Word',
     decks: 'Decks',
@@ -235,6 +274,10 @@ export const en: Translations = {
     selectDeck: 'Select a Deck',
     selectDeckDesc: 'Choose which deck to study',
     endSession: 'End Session',
+    undo: 'Undo',
+    cardProgress: '{current} / {total}',
+    studyAgain: 'Study again',
+    tapToReveal: 'Tap or press Space to reveal',
   },
   add: {
     title: 'Add New Word',
@@ -248,6 +291,10 @@ export const en: Translations = {
     createDeckFirst: 'Create a deck first',
     createDeck: 'Create Deck',
     noResults: 'No words found',
+    noResultsFor: 'No words found for "{query}"',
+    alreadyAdded: 'Already in this deck',
+    addAnother: 'Add another',
+    clearSearch: 'Clear search',
   },
   decks: {
     title: 'Decks',
@@ -272,7 +319,9 @@ export const en: Translations = {
     hideCards: 'Hide Cards',
     noCards: 'No cards yet',
     deleteConfirm: 'Delete "{name}"? This cannot be undone.',
+    deleteConfirmWithCount: 'Delete "{name}" and its {count} cards? This cannot be undone.',
     deleteFailed: 'Failed to delete',
+    dueCardAria: '{count} cards due for review',
   },
   flashcard: {
     meanings: 'Meanings',
@@ -289,6 +338,10 @@ export const en: Translations = {
     repetitions: 'Repetitions',
     easeFactor: 'Ease Factor',
     days: 'days',
+    srs: 'Spaced Repetition',
+    strokes: '{count} strokes',
+    onReading: 'On',
+    kunReading: 'Kun',
   },
   wordPreview: {
     common: 'Common',
@@ -297,6 +350,9 @@ export const en: Translations = {
     examples: 'Example Sentences',
     loadingExamples: 'Loading examples...',
     noExamples: 'No example sentences found',
+    examplesError: "Couldn't load examples",
+    play: 'Play audio',
+    stop: 'Stop audio',
   },
   login: {
     tagline: 'Learn Japanese vocabulary with spaced repetition',
@@ -349,8 +405,14 @@ export const en: Translations = {
     createdCount: 'Created {count} cards',
     createFailed: 'Failed to create cards',
     skippedCount: '{count} skipped',
+    failedCount: '{count} failed',
     textTooLong: 'Text is too long (max 5000 characters)',
     needDeck: 'Choose a deck first',
+    statusAdded: 'Added',
+    statusSkipped: 'Already in deck',
+    statusFailed: 'Not found',
+    alreadyInDeckCount: '{count} already in deck',
+    charCount: '{count} / {max}',
   },
 };
 
@@ -361,6 +423,12 @@ export const ja: Translations = {
     study: '学習',
     add: '追加',
     import: '取り込み',
+  },
+  a11y: {
+    skipToContent: '本文へスキップ',
+    changeLanguage: '言語を変更',
+    openMenu: 'メニューを開く',
+    closeMenu: 'メニューを閉じる',
   },
   common: {
     loading: '読み込み中...',
@@ -376,6 +444,7 @@ export const ja: Translations = {
     createNew: '+ 新規作成',
     loadFailed: 'データの読み込みに失敗しました',
     back: '戻る',
+    retry: '再試行',
   },
   toast: {
     wordAdded: '単語を追加しました',
@@ -388,6 +457,7 @@ export const ja: Translations = {
     welcome: 'ようこそ',
     subtitle: '日本語の語彙を効率的に学びましょう',
     dueCards: '{count}枚のカードが復習待ちです',
+    dueCardsLabel: '枚のカードが復習待ちです',
     startStudy: '学習を始める',
     addNewWord: '新しい単語を追加',
     decks: 'デッキ',
@@ -412,6 +482,10 @@ export const ja: Translations = {
     selectDeck: 'デッキを選択',
     selectDeckDesc: '学習するデッキを選んでください',
     endSession: '終了する',
+    undo: '元に戻す',
+    cardProgress: '{current} / {total}',
+    studyAgain: 'もう一度学習',
+    tapToReveal: 'タップまたはスペースキーで表示',
   },
   add: {
     title: '新しい単語を追加',
@@ -425,6 +499,10 @@ export const ja: Translations = {
     createDeckFirst: 'まずデッキを作成してください',
     createDeck: 'デッキを作成',
     noResults: '単語が見つかりませんでした',
+    noResultsFor: '「{query}」に一致する単語が見つかりませんでした',
+    alreadyAdded: 'このデッキに既存',
+    addAnother: '続けて追加',
+    clearSearch: '検索をクリア',
   },
   decks: {
     title: 'デッキ一覧',
@@ -449,7 +527,9 @@ export const ja: Translations = {
     hideCards: 'カードを隠す',
     noCards: 'まだカードがありません',
     deleteConfirm: '「{name}」を削除しますか？この操作は取り消せません。',
+    deleteConfirmWithCount: '「{name}」とその{count}枚のカードを削除しますか？この操作は取り消せません。',
     deleteFailed: '削除に失敗しました',
+    dueCardAria: '復習待ちのカード{count}枚',
   },
   flashcard: {
     meanings: '意味',
@@ -466,6 +546,10 @@ export const ja: Translations = {
     repetitions: '復習回数',
     easeFactor: '難易度',
     days: '日',
+    srs: '間隔反復',
+    strokes: '{count}画',
+    onReading: '音読み',
+    kunReading: '訓読み',
   },
   wordPreview: {
     common: '常用',
@@ -474,6 +558,9 @@ export const ja: Translations = {
     examples: '例文',
     loadingExamples: '例文を読み込み中...',
     noExamples: '例文が見つかりませんでした',
+    examplesError: '例文を読み込めませんでした',
+    play: '音声を再生',
+    stop: '音声を停止',
   },
   login: {
     tagline: '間隔反復で日本語の語彙を学びましょう',
@@ -526,8 +613,14 @@ export const ja: Translations = {
     createdCount: '{count}枚のカードを作成しました',
     createFailed: 'カードの作成に失敗しました',
     skippedCount: '{count}件スキップ',
+    failedCount: '{count}件失敗',
     textTooLong: 'テキストが長すぎます（最大5000文字）',
     needDeck: 'デッキを選択してください',
+    statusAdded: '追加済み',
+    statusSkipped: 'デッキに既存',
+    statusFailed: '見つかりません',
+    alreadyInDeckCount: '{count}件はデッキに既存',
+    charCount: '{count} / {max}',
   },
 };
 
@@ -538,6 +631,12 @@ export const ru: Translations = {
     study: 'Учить',
     add: 'Добавить',
     import: 'Импорт',
+  },
+  a11y: {
+    skipToContent: 'Перейти к содержимому',
+    changeLanguage: 'Сменить язык',
+    openMenu: 'Открыть меню',
+    closeMenu: 'Закрыть меню',
   },
   common: {
     loading: 'Загрузка...',
@@ -553,6 +652,7 @@ export const ru: Translations = {
     createNew: '+ Создать',
     loadFailed: 'Не удалось загрузить данные',
     back: 'Назад',
+    retry: 'Повторить',
   },
   toast: {
     wordAdded: 'Слово добавлено',
@@ -565,6 +665,7 @@ export const ru: Translations = {
     welcome: 'Добро пожаловать',
     subtitle: 'Изучайте японский эффективно',
     dueCards: '{count} карточек на повторение',
+    dueCardsLabel: 'карточек на повторение',
     startStudy: 'Начать обучение',
     addNewWord: 'Добавить слово',
     decks: 'Колоды',
@@ -589,6 +690,10 @@ export const ru: Translations = {
     selectDeck: 'Выберите колоду',
     selectDeckDesc: 'Выберите колоду для изучения',
     endSession: 'Завершить',
+    undo: 'Отменить',
+    cardProgress: '{current} / {total}',
+    studyAgain: 'Учить снова',
+    tapToReveal: 'Нажмите или пробел, чтобы показать',
   },
   add: {
     title: 'Добавить слово',
@@ -602,6 +707,10 @@ export const ru: Translations = {
     createDeckFirst: 'Сначала создайте колоду',
     createDeck: 'Создать колоду',
     noResults: 'Слова не найдены',
+    noResultsFor: 'По запросу «{query}» ничего не найдено',
+    alreadyAdded: 'Уже в этой колоде',
+    addAnother: 'Добавить ещё',
+    clearSearch: 'Очистить поиск',
   },
   decks: {
     title: 'Колоды',
@@ -626,7 +735,9 @@ export const ru: Translations = {
     hideCards: 'Скрыть карточки',
     noCards: 'Пока нет карточек',
     deleteConfirm: 'Удалить "{name}"? Это нельзя отменить.',
+    deleteConfirmWithCount: 'Удалить «{name}» и {count} карточек? Это нельзя отменить.',
     deleteFailed: 'Не удалось удалить',
+    dueCardAria: '{count} карточек на повторение',
   },
   flashcard: {
     meanings: 'Значения',
@@ -643,6 +754,10 @@ export const ru: Translations = {
     repetitions: 'Повторений',
     easeFactor: 'Коэффициент',
     days: 'дней',
+    srs: 'Интервальное повторение',
+    strokes: 'черт: {count}',
+    onReading: 'Он',
+    kunReading: 'Кун',
   },
   wordPreview: {
     common: 'Частое',
@@ -651,6 +766,9 @@ export const ru: Translations = {
     examples: 'Примеры предложений',
     loadingExamples: 'Загрузка примеров...',
     noExamples: 'Примеры не найдены',
+    examplesError: 'Не удалось загрузить примеры',
+    play: 'Воспроизвести',
+    stop: 'Остановить',
   },
   login: {
     tagline: 'Учите японский с интервальным повторением',
@@ -703,8 +821,14 @@ export const ru: Translations = {
     createdCount: 'Создано карточек: {count}',
     createFailed: 'Не удалось создать карточки',
     skippedCount: 'Пропущено: {count}',
+    failedCount: 'С ошибкой: {count}',
     textTooLong: 'Текст слишком длинный (максимум 5000 символов)',
     needDeck: 'Сначала выберите колоду',
+    statusAdded: 'Добавлено',
+    statusSkipped: 'Уже в колоде',
+    statusFailed: 'Не найдено',
+    alreadyInDeckCount: '{count} уже в колоде',
+    charCount: '{count} / {max}',
   },
 };
 
