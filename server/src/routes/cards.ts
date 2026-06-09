@@ -15,6 +15,8 @@ cardsRouter.get('/:id', asyncHandler(async (req, res) => {
   const { rows } = await pool.query<CardWithWordRow>(`
     SELECT c.*, w.*,
       c.id as card_id,
+      c.created_at as card_created_at,
+      c.updated_at as card_updated_at,
       w.id as word_id
     FROM cards c
     JOIN words w ON c.word_id = w.id

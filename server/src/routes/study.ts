@@ -20,6 +20,8 @@ studyRouter.get('/due', asyncHandler(async (req, res) => {
   let query = `
     SELECT c.*, w.*,
       c.id as card_id,
+      c.created_at as card_created_at,
+      c.updated_at as card_updated_at,
       w.id as word_id
     FROM cards c
     JOIN words w ON c.word_id = w.id

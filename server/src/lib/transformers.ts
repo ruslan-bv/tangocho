@@ -44,6 +44,8 @@ export interface CardRow {
 
 export interface CardWithWordRow extends CardRow {
   card_id: number;
+  card_created_at: string;
+  card_updated_at: string;
   japanese: string;
   reading: string;
   meanings: string[];
@@ -118,8 +120,8 @@ export function transformCardWithWordRow(row: CardWithWordRow) {
     interval: row.interval,
     repetitions: row.repetitions,
     dueDate: row.due_date,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    createdAt: row.card_created_at,
+    updatedAt: row.card_updated_at,
     word: {
       id: row.word_id,
       japanese: row.japanese,
