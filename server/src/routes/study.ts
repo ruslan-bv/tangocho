@@ -28,12 +28,17 @@ studyRouter.get('/due', asyncHandler(async (req, res) => {
 
   const params: (number | string)[] = [userId];
 
-  if (deckId) {
-    params.push(parseInt(deckId as string));
+  if (deckId !== undefined) {
+    const parsedDeckId = Number(deckId);
+    if (!Number.isInteger(parsedDeckId)) {
+      return badRequest(res, 'deckId must be an integer');
+    }
+    params.push(parsedDeckId);
     query += ` AND c.deck_id = $${params.length}`;
   }
 
-  query += ` ORDER BY c.due_date ASC LIMIT ${config.limits.dueCardsLimit}`;
+  params.push(config.limits.dueCardsLimit);
+  query += ` ORDER BY c.due_date ASC LIMIT $${params.length}`;
 
   const { rows } = await pool.query<CardWithWordRow>(query, params);
 
@@ -45,10 +50,11 @@ studyRouter.post('/review',
   validateBody('cardId', 'rating'),
   asyncHandler(async (req, res) => {
     const userId = req.user!.id;
-    const { cardId, rating } = req.body;
+    const { cardId } = req.body;
+    const rating = Number(req.body.rating);
 
-    if (rating < 1 || rating > 4) {
-      return badRequest(res, 'Rating must be between 1 and 4');
+    if (!Number.isInteger(rating) || rating < 1 || rating > 4) {
+      return badRequest(res, 'Rating must be an integer between 1 and 4');
     }
 
     const { rows: cardRows } = await pool.query(
@@ -73,22 +79,30 @@ studyRouter.post('/review',
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + interval);
 
-    // Update card
-    const { rows: updatedRows } = await pool.query(
-      `UPDATE cards
-       SET ease_factor = $1, interval = $2, repetitions = $3, due_date = $4, updated_at = NOW()
-       WHERE id = $5 AND user_id = $6
-       RETURNING *`,
-      [easeFactor, interval, repetitions, dueDate.toISOString(), cardId, userId]
-    );
-
-    // Record review
-    await pool.query(
-      'INSERT INTO reviews (user_id, card_id, rating) VALUES ($1, $2, $3)',
-      [userId, cardId, rating]
-    );
-
-    const updatedCard = updatedRows[0];
+    // Update card and record the review atomically
+    const client = await pool.connect();
+    let updatedCard;
+    try {
+      await client.query('BEGIN');
+      const { rows: updatedRows } = await client.query(
+        `UPDATE cards
+         SET ease_factor = $1, interval = $2, repetitions = $3, due_date = $4, updated_at = NOW()
+         WHERE id = $5 AND user_id = $6
+         RETURNING *`,
+        [easeFactor, interval, repetitions, dueDate.toISOString(), cardId, userId]
+      );
+      await client.query(
+        'INSERT INTO reviews (user_id, card_id, rating) VALUES ($1, $2, $3)',
+        [userId, cardId, rating]
+      );
+      await client.query('COMMIT');
+      updatedCard = updatedRows[0];
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
 
     res.json(transformCardRow(updatedCard));
   })
@@ -104,11 +118,27 @@ studyRouter.get('/stats', asyncHandler(async (req, res) => {
       (SELECT COUNT(*) FROM reviews WHERE reviewed_at::date = CURRENT_DATE AND user_id = $1) as total_reviewed
   `, [userId]);
 
-  // Calculate streak (simplified - just counts consecutive days with reviews)
+  // Streak: consecutive review days ending today (or yesterday if today has no reviews yet)
   const { rows: streakRows } = await pool.query(`
-    SELECT COUNT(DISTINCT reviewed_at::date) as days
-    FROM reviews
-    WHERE reviewed_at >= NOW() - INTERVAL '30 days' AND user_id = $1
+    WITH days AS (
+      SELECT DISTINCT reviewed_at::date AS day
+      FROM reviews
+      WHERE user_id = $1
+    ),
+    anchor AS (
+      SELECT CASE
+        WHEN EXISTS (SELECT 1 FROM days WHERE day = CURRENT_DATE) THEN CURRENT_DATE
+        ELSE CURRENT_DATE - 1
+      END AS start_day
+    ),
+    numbered AS (
+      SELECT day, (ROW_NUMBER() OVER (ORDER BY day DESC) - 1)::int AS offset
+      FROM days
+      WHERE day <= (SELECT start_day FROM anchor)
+    )
+    SELECT COUNT(*) AS days
+    FROM numbered
+    WHERE day = (SELECT start_day FROM anchor) - offset
   `, [userId]);
 
   const stats = statsRows[0];
