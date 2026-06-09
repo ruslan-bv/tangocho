@@ -1,17 +1,39 @@
 <script lang="ts">
-  import { getToasts, removeToast } from '$lib/stores/toast.svelte';
+  import { fade } from 'svelte/transition';
+  import { getToasts, removeToast, clearTimer, scheduleRemoval } from '$lib/stores/toast.svelte';
+  import type { Toast } from '$lib/stores/toast.svelte';
+  import { t } from '$lib/i18n';
 
   const toasts = $derived(getToasts());
+
+  // Pause the auto-dismiss countdown while the user is reading/interacting.
+  function pause(toast: Toast) {
+    clearTimer(toast.id);
+  }
+
+  function resume(toast: Toast) {
+    if (toast.duration > 0) scheduleRemoval(toast.id, toast.duration);
+  }
 </script>
 
-<div class="toast-container">
+<!-- One persistent live region: success/info announce politely; errors carry
+     role="alert" so they interrupt and aren't auto-dismissed before being read. -->
+<div class="toast-container" aria-live="polite" aria-relevant="additions">
   {#each toasts as toast (toast.id)}
-    <div class="toast {toast.type}" role="alert">
+    <div
+      class="toast {toast.type}"
+      role={toast.type === 'error' ? 'alert' : 'status'}
+      onmouseenter={() => pause(toast)}
+      onmouseleave={() => resume(toast)}
+      onfocusin={() => pause(toast)}
+      onfocusout={() => resume(toast)}
+      out:fade={{ duration: 200 }}
+    >
       <span class="toast-message">{toast.message}</span>
       <button
         class="toast-close"
         onclick={() => removeToast(toast.id)}
-        aria-label="Close"
+        aria-label={t('common.close')}
       >
         ×
       </button>
@@ -33,12 +55,12 @@
 
   .toast {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
-    animation: slideIn 0.3s ease-out, fadeOut 0.5s ease-in 2.5s forwards;
+    animation: slideIn 0.3s ease-out;
   }
 
   .toast.error {
@@ -63,18 +85,31 @@
   }
 
   .toast-close {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin: calc(var(--space-1) * -1) calc(var(--space-2) * -1) calc(var(--space-1) * -1) 0;
     background: none;
     border: none;
+    border-radius: var(--radius-sm);
     color: inherit;
     font-size: var(--text-lg);
     cursor: pointer;
     opacity: 0.8;
-    padding: 0;
     line-height: 1;
   }
 
   .toast-close:hover {
     opacity: 1;
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .toast-close:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 1px;
   }
 
   @keyframes slideIn {
@@ -85,15 +120,6 @@
     to {
       transform: translateX(0);
       opacity: 1;
-    }
-  }
-
-  @keyframes fadeOut {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
     }
   }
 
