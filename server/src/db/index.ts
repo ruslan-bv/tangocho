@@ -94,6 +94,7 @@ export async function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_words_japanese ON words(japanese);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_cards_user_word_deck ON cards(user_id, word_id, deck_id);
     CREATE UNIQUE INDEX IF NOT EXISTS idx_words_user_japanese ON words(user_id, japanese);
+    CREATE INDEX IF NOT EXISTS idx_cards_user_due ON cards(user_id, due_date);
   `);
 }
 

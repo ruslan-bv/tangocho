@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { initDatabase } from './db/index.js';
 import { initTokenizer } from './lib/japanese/tokenize.js';
 import { authConfig } from './lib/auth/config.js';
+import { deleteExpiredSessions } from './lib/auth/sessions.js';
 import { attachUser } from './middleware/auth.js';
 import { authRouter } from './routes/auth.js';
 import { decksRouter } from './routes/decks.js';
@@ -94,6 +95,12 @@ async function start() {
       () => console.log('Japanese tokenizer ready'),
       (err) => console.error('Tokenizer init failed:', err)
     );
+
+    // Garbage-collect expired sessions on startup and hourly thereafter
+    const cleanupSessions = () =>
+      deleteExpiredSessions().catch((err) => console.error('Session cleanup failed:', err));
+    cleanupSessions();
+    setInterval(cleanupSessions, 60 * 60 * 1000).unref();
 
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
