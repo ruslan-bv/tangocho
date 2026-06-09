@@ -3,7 +3,7 @@ import { pool } from '../db/index.js';
 import { calculateNextReview } from '../lib/srs.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
-import { validateBody } from '../middleware/validate.js';
+import { validateBody, validateIntBody } from '../middleware/validate.js';
 import { notFound, badRequest } from '../lib/responses.js';
 import { CardWithWordRow, transformCardWithWordRow, transformCardRow } from '../lib/transformers.js';
 import { config } from '../config.js';
@@ -49,7 +49,8 @@ studyRouter.get('/due', asyncHandler(async (req, res) => {
 
 // Submit review
 studyRouter.post('/review',
-  validateBody('cardId', 'rating'),
+  validateBody('rating'),
+  validateIntBody('cardId'),
   asyncHandler(async (req, res) => {
     const userId = req.user!.id;
     const { cardId } = req.body;

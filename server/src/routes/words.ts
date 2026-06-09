@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db/index.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
-import { validateTrimmedBody, validateBody } from '../middleware/validate.js';
+import { validateTrimmedBody, validateIntBody, validateIdParam } from '../middleware/validate.js';
 import { notFound, conflict, created } from '../lib/responses.js';
 import { WordRow, transformWordRow, transformCardRow } from '../lib/transformers.js';
 import { createWordWithCard } from '../lib/words/createWordWithCard.js';
@@ -15,7 +15,7 @@ wordsRouter.use(requireAuth);
 // Add a new word
 wordsRouter.post('/',
   validateTrimmedBody('japanese', 'Japanese word is required'),
-  validateBody('deckId'),
+  validateIntBody('deckId'),
   asyncHandler(async (req, res) => {
     const userId = req.user!.id;
     const { japanese, deckId } = req.body;
@@ -40,7 +40,7 @@ wordsRouter.post('/',
 );
 
 // Get a word by ID
-wordsRouter.get('/:id', asyncHandler(async (req, res) => {
+wordsRouter.get('/:id', validateIdParam('id'), asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { rows } = await pool.query<WordRow>(
     'SELECT * FROM words WHERE id = $1 AND user_id = $2',

@@ -8,6 +8,7 @@ import {
   verifyPassword,
   isValidEmail,
   MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH,
 } from '../lib/auth/passwords.js';
 import { pool, ensureDefaultDeck } from '../db/index.js';
 import { createSession, deleteSession } from '../lib/auth/sessions.js';
@@ -48,6 +49,11 @@ authRouter.post('/register', asyncHandler(async (req, res) => {
   if (creds.password.length < MIN_PASSWORD_LENGTH) {
     return res.status(400).json({
       message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+    });
+  }
+  if (creds.password.length > MAX_PASSWORD_LENGTH) {
+    return res.status(400).json({
+      message: `Password must be at most ${MAX_PASSWORD_LENGTH} characters`,
     });
   }
 

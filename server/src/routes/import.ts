@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db/index.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
-import { validateBody, validateTrimmedBody } from '../middleware/validate.js';
+import { validateIntBody, validateTrimmedBody } from '../middleware/validate.js';
 import { badRequest, notFound } from '../lib/responses.js';
 import { tokenize, uniqueByLemma } from '../lib/japanese/tokenize.js';
 import { jishoClient } from '../lib/jisho.js';
@@ -83,7 +83,7 @@ interface BulkResult {
 
 importRouter.post(
   '/bulk',
-  validateBody('deckId'),
+  validateIntBody('deckId'),
   asyncHandler(async (req, res) => {
     const userId = req.user!.id;
     const deckId: number = req.body.deckId;

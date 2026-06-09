@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db/index.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
+import { validateIdParam } from '../middleware/validate.js';
 import { notFound, noContent } from '../lib/responses.js';
 import { CardWithWordRow, transformCardWithWordRow } from '../lib/transformers.js';
 
@@ -10,7 +11,7 @@ export const cardsRouter = Router();
 cardsRouter.use(requireAuth);
 
 // Get a single card with its word
-cardsRouter.get('/:id', asyncHandler(async (req, res) => {
+cardsRouter.get('/:id', validateIdParam('id'), asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { rows } = await pool.query<CardWithWordRow>(`
     SELECT c.*, w.*,
@@ -32,7 +33,7 @@ cardsRouter.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete a card
-cardsRouter.delete('/:id', asyncHandler(async (req, res) => {
+cardsRouter.delete('/:id', validateIdParam('id'), asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { rowCount } = await pool.query(
     'DELETE FROM cards WHERE id = $1 AND user_id = $2',

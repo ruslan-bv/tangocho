@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db/index.js';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { requireAuth } from '../middleware/auth.js';
-import { validateTrimmedBody } from '../middleware/validate.js';
+import { validateTrimmedBody, validateIdParam } from '../middleware/validate.js';
 import { notFound, badRequest, created, noContent } from '../lib/responses.js';
 import { DeckRow, CardWithWordRow, transformDeckRow, transformCardWithWordRow } from '../lib/transformers.js';
 import { userOwnsDeck } from '../lib/decks.js';
@@ -31,7 +31,7 @@ decksRouter.get('/', asyncHandler(async (req, res) => {
 }));
 
 // Get single deck with stats
-decksRouter.get('/:id', asyncHandler(async (req, res) => {
+decksRouter.get('/:id', validateIdParam('id'), asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { rows } = await pool.query<DeckRow>(`
     SELECT
@@ -54,7 +54,7 @@ decksRouter.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Get cards in deck
-decksRouter.get('/:id/cards', asyncHandler(async (req, res) => {
+decksRouter.get('/:id/cards', validateIdParam('id'), asyncHandler(async (req, res) => {
   const userId = req.user!.id;
 
   if (!(await userOwnsDeck(userId, req.params.id))) {
@@ -94,7 +94,7 @@ decksRouter.post('/',
 );
 
 // Update deck
-decksRouter.patch('/:id', asyncHandler(async (req, res) => {
+decksRouter.patch('/:id', validateIdParam('id'), asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { name, description } = req.body;
   const updates: string[] = [];
@@ -102,10 +102,16 @@ decksRouter.patch('/:id', asyncHandler(async (req, res) => {
   let paramIndex = 1;
 
   if (name !== undefined) {
+    if (typeof name !== 'string' || !name.trim()) {
+      return badRequest(res, 'name must be a non-empty string');
+    }
     updates.push(`name = $${paramIndex++}`);
     values.push(name.trim());
   }
   if (description !== undefined) {
+    if (typeof description !== 'string') {
+      return badRequest(res, 'description must be a string');
+    }
     updates.push(`description = $${paramIndex++}`);
     values.push(description.trim());
   }
@@ -132,7 +138,7 @@ decksRouter.patch('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Delete deck
-decksRouter.delete('/:id', asyncHandler(async (req, res) => {
+decksRouter.delete('/:id', validateIdParam('id'), asyncHandler(async (req, res) => {
   const userId = req.user!.id;
   const { rowCount } = await pool.query(
     'DELETE FROM decks WHERE id = $1 AND user_id = $2',

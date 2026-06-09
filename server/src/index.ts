@@ -21,7 +21,7 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({ origin: authConfig.clientUrl, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: '100kb' }));
 app.use(attachUser);
 
 // Routes
@@ -47,8 +47,10 @@ interface HttpError extends Error {
 
 app.use((err: HttpError, req: Request, res: Response, _next: NextFunction) => {
   console.error(`Error in ${req.method} ${req.path}:`, err);
-  res.status(err.status || 500).json({
-    message: err.message || 'Internal server error'
+  const status = err.status || 500;
+  // Hide internal details (driver/upstream messages) for unexpected errors
+  res.status(status).json({
+    message: status < 500 && err.message ? err.message : 'Internal server error'
   });
 });
 
