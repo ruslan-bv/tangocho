@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import type { CardWithWord } from '$lib/api/types';
@@ -15,15 +14,26 @@
   const deckId = $derived(Number($page.params.id));
   const cardId = $derived(Number($page.params.cardId));
 
-  onMount(async () => {
-    try {
-      card = await api.getCard(cardId);
-    } catch (error) {
-      console.error('Failed to load card:', error);
-      showError(t('common.loadFailed'));
-    } finally {
-      loading = false;
-    }
+  // Keyed on the route param: SvelteKit reuses this component when only the
+  // param changes, so onMount alone would show stale data.
+  let loadSeq = 0;
+  $effect(() => {
+    const id = cardId;
+    const seq = ++loadSeq;
+    loading = true;
+    api
+      .getCard(id)
+      .then((data) => {
+        if (seq === loadSeq) card = data;
+      })
+      .catch((error) => {
+        if (seq !== loadSeq) return;
+        console.error('Failed to load card:', error);
+        showError(t('common.loadFailed'));
+      })
+      .finally(() => {
+        if (seq === loadSeq) loading = false;
+      });
   });
 
   async function deleteCard() {

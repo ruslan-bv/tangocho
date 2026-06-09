@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import { page } from '$app/stores';
   import { beforeNavigate } from '$app/navigation';
   import type { CardWithWord, DeckWithStats, ReviewRating } from '$lib/api/types';
@@ -30,6 +30,11 @@
   let pending = $state<Pending | null>(null);
   let undoTimer: ReturnType<typeof setTimeout> | undefined;
 
+  // Discards responses from superseded loads (e.g. rapid deck switches).
+  let loadSeq = 0;
+
+  let ratingButtons = $state<HTMLDivElement | null>(null);
+
   const currentCard = $derived(cards[currentIndex]);
   const totalCards = $derived(cards.length);
   const progressPercent = $derived(totalCards ? (currentIndex / totalCards) * 100 : 0);
@@ -59,7 +64,12 @@
   }
 
   async function loadData(deckParamValue: string | null) {
-    clearPending();
+    const seq = ++loadSeq;
+    // Send the queued rating before refetching, or the just-rated card
+    // comes back as due and gets reviewed twice.
+    await commitPending();
+    if (seq !== loadSeq) return;
+
     // Reset state for new load
     loading = true;
     selectingDeck = false;
@@ -74,26 +84,36 @@
       if (deckParamValue) {
         // Deck specified in URL - load cards directly
         deckId = Number(deckParamValue);
-        cards = await api.getDueCards(deckId);
+        const dueCards = await api.getDueCards(deckId);
+        if (seq !== loadSeq) return;
+        cards = dueCards;
         startedWithCards = cards.length > 0;
         if (cards.length === 0) {
           sessionComplete = true;
         }
       } else {
         // No deck specified - show deck selection
-        decks = await api.getDecks();
+        const allDecks = await api.getDecks();
+        if (seq !== loadSeq) return;
+        decks = allDecks;
         selectingDeck = true;
       }
     } catch (error) {
       console.error('Failed to load data:', error);
       showError(t('common.loadFailed'));
     } finally {
-      loading = false;
+      if (seq === loadSeq) {
+        loading = false;
+      }
     }
   }
 
-  function reveal() {
+  async function reveal() {
     showAnswer = true;
+    // The card-front reveal button disappears, so keyboard focus would fall
+    // back to <body>; land it on the rating buttons instead.
+    await tick();
+    ratingButtons?.focus();
   }
 
   function clearPending() {
@@ -280,6 +300,7 @@
     <div
       class="progress-track"
       role="progressbar"
+      aria-label={t('study.cardProgress', { current: Math.min(currentIndex + 1, totalCards), total: totalCards })}
       aria-valuemin="0"
       aria-valuemax={totalCards}
       aria-valuenow={currentIndex}
@@ -296,7 +317,7 @@
           <span class="shortcut">Space</span>
         </Button>
       {:else}
-        <div class="rating-buttons">
+        <div class="rating-buttons" bind:this={ratingButtons} tabindex="-1">
           <button class="rating-btn again" onclick={() => rate(1)}>
             <span class="rating-label">{t('study.again')}</span>
             <span class="rating-key">1</span>

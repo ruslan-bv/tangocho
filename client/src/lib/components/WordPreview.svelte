@@ -61,9 +61,10 @@
   }
 
   async function playAudio(example: SentenceExample, index: number) {
+    const wasPlaying = playingIndex === index;
     stopAudio();
 
-    if (playingIndex === index || !example.audioUrl) {
+    if (wasPlaying || !example.audioUrl) {
       return;
     }
 

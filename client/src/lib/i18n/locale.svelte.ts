@@ -67,10 +67,15 @@ export function t(key: string, params?: Record<string, string | number>): string
   return value;
 }
 
+const DATE_LOCALES: Record<Locale, string> = {
+  ja: 'ja-JP',
+  en: 'en-US',
+  ru: 'ru-RU',
+};
+
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
-  const locale = currentLocale === 'ja' ? 'ja-JP' : 'en-US';
-  return d.toLocaleDateString(locale);
+  return d.toLocaleDateString(DATE_LOCALES[currentLocale]);
 }
 
 // Initialize locale on client side

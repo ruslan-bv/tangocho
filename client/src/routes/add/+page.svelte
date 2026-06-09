@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
+  import { onMount, onDestroy, tick } from 'svelte';
+  import { page } from '$app/stores';
   import type { JishoSearchResult, DeckWithStats } from '$lib/api/types';
   import { api, ApiError } from '$lib/api/client';
   import Button from '$lib/components/Button.svelte';
@@ -29,7 +30,11 @@
   onMount(async () => {
     try {
       decks = await api.getDecks();
-      if (decks.length > 0) {
+      // Preselect the deck from ?deck= (links from deck pages), else the first
+      const requestedDeckId = Number($page.url.searchParams.get('deck'));
+      if (decks.some((d) => d.id === requestedDeckId)) {
+        selectedDeckId = requestedDeckId;
+      } else if (decks.length > 0) {
         selectedDeckId = decks[0].id;
       }
     } catch (e) {
@@ -37,6 +42,12 @@
       showError(t('common.loadFailed'));
     }
     searchInput?.focus();
+  });
+
+  onDestroy(() => {
+    // Cancel a queued search so it can't fire (and toast) after navigation
+    clearTimeout(searchTimeout);
+    searchSeq++;
   });
 
   // Check if query contains valid characters (letters, numbers, or Japanese)
@@ -189,12 +200,12 @@
     </div>
 
     {#if searchResults.length > 0 && !selectedResult}
-      <div class="search-results" role="listbox" aria-label={t('add.title')}>
+      <!-- Plain buttons with roving arrow-key focus; listbox/option roles would
+           require the full combobox pattern wired to the input. -->
+      <div class="search-results" role="group" aria-label={t('add.title')}>
         {#each searchResults as result, index}
           <button
             class="result-item"
-            role="option"
-            aria-selected="false"
             bind:this={resultEls[index]}
             onclick={() => selectResult(result)}
             onkeydown={(e) => handleResultKeydown(e, index)}

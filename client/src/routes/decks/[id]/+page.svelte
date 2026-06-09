@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import type { DeckWithStats, CardWithWord } from '$lib/api/types';
@@ -17,25 +16,31 @@
 
   const deckId = $derived(Number($page.params.id));
 
-  // Precompute isDue status to avoid creating Date objects in render loop
   function isDue(dueDate: string): boolean {
     return new Date(dueDate) <= new Date();
   }
 
-  onMount(async () => {
-    try {
-      const [deckData, cardsData] = await Promise.all([
-        api.getDeck(deckId),
-        api.getDeckCards(deckId)
-      ]);
-      deck = deckData;
-      cards = cardsData;
-    } catch (error) {
-      console.error('Failed to load deck:', error);
-      showError(t('common.loadFailed'));
-    } finally {
-      loading = false;
-    }
+  // Keyed on the route param: SvelteKit reuses this component when only the
+  // param changes, so onMount alone would show stale data.
+  let loadSeq = 0;
+  $effect(() => {
+    const id = deckId;
+    const seq = ++loadSeq;
+    loading = true;
+    Promise.all([api.getDeck(id), api.getDeckCards(id)])
+      .then(([deckData, cardsData]) => {
+        if (seq !== loadSeq) return;
+        deck = deckData;
+        cards = cardsData;
+      })
+      .catch((error) => {
+        if (seq !== loadSeq) return;
+        console.error('Failed to load deck:', error);
+        showError(t('common.loadFailed'));
+      })
+      .finally(() => {
+        if (seq === loadSeq) loading = false;
+      });
   });
 
   async function deleteDeck() {

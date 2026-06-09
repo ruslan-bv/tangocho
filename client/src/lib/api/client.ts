@@ -26,18 +26,28 @@ export class ApiError extends Error {
   }
 }
 
+// Lets the auth store react to session expiry (401s outside /auth endpoints)
+// without a circular import.
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: () => void): void {
+  onUnauthorized = handler;
+}
+
 class ApiClient {
   private async fetch<T>(path: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
       credentials: 'include',
+      ...options,
       headers: {
         'Content-Type': 'application/json',
         ...options?.headers
-      },
-      ...options
+      }
     });
 
     if (!response.ok) {
+      if (response.status === 401 && !path.startsWith('/auth')) {
+        onUnauthorized?.();
+      }
       const error = await response.json().catch(() => ({ message: 'Request failed' }));
       throw new ApiError(error.message || `HTTP ${response.status}`, response.status);
     }

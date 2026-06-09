@@ -1,4 +1,4 @@
-import { api } from '$lib/api/client';
+import { api, setUnauthorizedHandler } from '$lib/api/client';
 import type { AuthUser } from '$lib/api/types';
 
 type AuthState =
@@ -7,6 +7,12 @@ type AuthState =
   | { status: 'anonymous'; user: null };
 
 let state = $state<AuthState>({ status: 'loading', user: null });
+
+// When the session expires mid-use, flip to anonymous so the layout guard
+// redirects to login instead of every page erroring indefinitely.
+setUnauthorizedHandler(() => {
+  state = { status: 'anonymous', user: null };
+});
 
 export function getAuthState(): AuthState {
   return state;
