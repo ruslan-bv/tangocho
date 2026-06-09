@@ -3,6 +3,8 @@
  * Centralizes snake_case to camelCase mapping
  */
 
+import { sanitizeFurigana, sanitizeSentences } from './sanitize.js';
+
 // Row types from database
 export interface DeckRow {
   id: number;
@@ -84,7 +86,7 @@ export function transformWordRow(word: WordRow) {
     meanings: word.meanings,
     partsOfSpeech: word.parts_of_speech,
     kanji: word.kanji,
-    sentences: word.sentences,
+    sentences: sanitizeSentences(word.sentences),
     jishoData: word.jisho_data,
     createdAt: word.created_at,
     updatedAt: word.updated_at
@@ -125,7 +127,7 @@ export function transformCardWithWordRow(row: CardWithWordRow) {
       meanings: row.meanings,
       partsOfSpeech: row.parts_of_speech,
       kanji: row.kanji,
-      sentences: row.sentences,
+      sentences: sanitizeSentences(row.sentences),
       jishoData: row.jisho_data
     }
   };
@@ -135,7 +137,7 @@ export function transformCardWithWordRow(row: CardWithWordRow) {
 export function transformImmersionKitExample(example: ImmersionKitExample) {
   return {
     japanese: example.sentence,
-    furigana: example.sentence_with_furigana,
+    furigana: sanitizeFurigana(example.sentence_with_furigana),
     english: example.translation,
     source: example.title,
     audioUrl: example.sound

@@ -162,8 +162,12 @@
         {#each examples as example, index}
           <div class="example-item">
             <div class="example-content">
-              <!-- eslint-disable-next-line svelte/no-at-html-tags -- Trusted source: Tatoeba/Immersion Kit API -->
-              <p class="example-japanese">{@html example.furigana || example.japanese}</p>
+              {#if example.furigana}
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -- Sanitized server-side to ruby markup only -->
+                <p class="example-japanese">{@html example.furigana}</p>
+              {:else}
+                <p class="example-japanese">{example.japanese}</p>
+              {/if}
               <p class="example-translation">{example.english}</p>
               <span class="example-source">{formatSource(example.source)}</span>
             </div>

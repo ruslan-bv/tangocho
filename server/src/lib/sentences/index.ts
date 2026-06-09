@@ -9,6 +9,7 @@
  */
 
 import { config } from '../../config.js';
+import { sanitizeFurigana } from '../sanitize.js';
 
 export interface Sentence {
   japanese: string;
@@ -102,7 +103,7 @@ export class TatoebaSentenceProvider implements SentenceProvider {
       .filter(sentence => sentence.translations.length > 0)
       .map(sentence => {
         const furiganaTranscription = sentence.transcriptions.find(t => t.html);
-        const furigana = furiganaTranscription?.html || sentence.text;
+        const furigana = sanitizeFurigana(furiganaTranscription?.html || sentence.text);
         const directTranslation = sentence.translations.find(t => t.is_direct);
         const englishTranslation = directTranslation || sentence.translations[0];
         const audioUrl = sentence.audios[0]?.download_url;
@@ -163,7 +164,7 @@ export class ImmersionKitSentenceProvider implements SentenceProvider {
 
     return data.examples.slice(0, actualLimit).map(example => ({
       japanese: example.sentence,
-      furigana: example.sentence_with_furigana,
+      furigana: sanitizeFurigana(example.sentence_with_furigana),
       english: example.translation,
       source: example.title,
       audioUrl: example.sound || undefined

@@ -72,8 +72,12 @@
           <h4 class="section-label">{t('flashcard.examples')}</h4>
           {#each word.sentences.slice(0, 2) as sentence}
             <div class="sentence">
-              <!-- eslint-disable-next-line svelte/no-at-html-tags -- Trusted source: Immersion Kit API -->
-              <p class="sentence-jp">{@html sentence.furigana || sentence.japanese}</p>
+              {#if sentence.furigana}
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -- Sanitized server-side to ruby markup only -->
+                <p class="sentence-jp">{@html sentence.furigana}</p>
+              {:else}
+                <p class="sentence-jp">{sentence.japanese}</p>
+              {/if}
               <p class="sentence-en">{sentence.english}</p>
             </div>
           {/each}
