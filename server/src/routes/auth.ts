@@ -101,7 +101,8 @@ authRouter.post('/login', asyncHandler(async (req, res) => {
   const row = rows[0];
 
   // Run verifyPassword even if no row, to keep timing similar.
-  const dummyHash = '$2b$12$0000000000000000000000000000000000000000000000000000';
+  // A real (precomputed) hash so bcrypt does the full comparison work.
+  const dummyHash = '$2b$12$hhWOr.GE0y6ywsKy2clTT.vVbdRLTQXJp.EPQgtBSBaRUjTsJ7KJ.';
   const ok = await verifyPassword(creds.password, row?.password_hash ?? dummyHash);
 
   if (!row || !ok) {

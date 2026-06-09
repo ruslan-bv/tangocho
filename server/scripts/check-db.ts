@@ -19,7 +19,7 @@ async function startPostgres(): Promise<boolean> {
 
   // Try brew services first (most common on macOS)
   try {
-    await execAsync('brew services start postgresql@14 2>/dev/null || brew services start postgresql 2>/dev/null');
+    await execAsync('brew services start postgresql@15 2>/dev/null || brew services start postgresql 2>/dev/null');
     // Wait for PostgreSQL to be ready
     for (let i = 0; i < 10; i++) {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -30,7 +30,7 @@ async function startPostgres(): Promise<boolean> {
   } catch {
     // Try pg_ctl as fallback
     try {
-      const { stdout } = await execAsync('brew --prefix postgresql@14 2>/dev/null || brew --prefix postgresql 2>/dev/null');
+      const { stdout } = await execAsync('brew --prefix postgresql@15 2>/dev/null || brew --prefix postgresql 2>/dev/null');
       const pgDir = stdout.trim();
       await execAsync(`${pgDir}/bin/pg_ctl -D ${pgDir}/var/postgres start -l ${pgDir}/var/postgres/server.log`);
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -97,4 +97,7 @@ async function main() {
   console.log('\nReady!\n');
 }
 
-main();
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
