@@ -7,15 +7,36 @@
   import { getAuthState, logout } from '$lib/stores/auth.svelte';
 
   const auth = $derived(getAuthState());
+  const path = $derived($page.url.pathname);
 
   let menuOpen = $state(false);
+  let navOpen = $state(false);
+  let avatarBtn = $state<HTMLButtonElement>();
+  let firstMenuItem = $state<HTMLButtonElement>();
+
+  // Centralized active-link detection so every link uses the same rule.
+  function isActive(href: string, exact = false): boolean {
+    if (exact) return path === href;
+    return path === href || path.startsWith(href + '/');
+  }
 
   function toggleMenu() {
     menuOpen = !menuOpen;
+    if (menuOpen) navOpen = false;
   }
 
-  function closeMenu() {
+  function closeMenu(returnFocus = false) {
     menuOpen = false;
+    if (returnFocus) avatarBtn?.focus();
+  }
+
+  function toggleNav() {
+    navOpen = !navOpen;
+    if (navOpen) menuOpen = false;
+  }
+
+  function closeNav() {
+    navOpen = false;
   }
 
   async function handleSignOut() {
@@ -25,16 +46,19 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') closeMenu();
+    if (e.key !== 'Escape') return;
+    if (menuOpen) closeMenu(true);
+    if (navOpen) closeNav();
   }
 
   function handleDocumentClick(e: MouseEvent) {
     const target = e.target as HTMLElement | null;
-    if (!target?.closest('.user-menu')) closeMenu();
+    if (!target?.closest('.user-menu')) menuOpen = false;
+    if (!target?.closest('.nav-mobile')) navOpen = false;
   }
 
   $effect(() => {
-    if (menuOpen) {
+    if (menuOpen || navOpen) {
       document.addEventListener('click', handleDocumentClick);
       document.addEventListener('keydown', handleKeydown);
       return () => {
@@ -42,6 +66,11 @@
         document.removeEventListener('keydown', handleKeydown);
       };
     }
+  });
+
+  // Move focus into the user menu on open so keyboard users land on the action.
+  $effect(() => {
+    if (menuOpen) firstMenuItem?.focus();
   });
 
   function initials(name: string): string {
@@ -52,29 +81,36 @@
   }
 </script>
 
+{#snippet navLinks(onclick?: () => void)}
+  <a href="/" class:active={isActive('/', true)} aria-current={isActive('/', true) ? 'page' : undefined} {onclick}>
+    {t('nav.home')}
+  </a>
+  <a href="/decks" class:active={isActive('/decks')} aria-current={isActive('/decks') ? 'page' : undefined} {onclick}>
+    {t('nav.decks')}
+  </a>
+  <a href="/study" class:active={isActive('/study')} aria-current={isActive('/study') ? 'page' : undefined} {onclick}>
+    {t('nav.study')}
+  </a>
+  <a href="/add" class:active={isActive('/add', true)} aria-current={isActive('/add', true) ? 'page' : undefined} {onclick}>
+    {t('nav.add')}
+  </a>
+  <a href="/import" class:active={isActive('/import', true)} aria-current={isActive('/import', true) ? 'page' : undefined} {onclick}>
+    {t('nav.import')}
+  </a>
+{/snippet}
+
 <header class="header">
   <div class="header-content">
-    <a href="/" class="logo">
+    <a href="/" class="logo" aria-label="Tangocho">
       <span class="logo-kanji">単語帳</span>
       <span class="logo-romaji">Tangocho</span>
     </a>
 
-    <nav class="nav">
-      <a href="/" class:active={$page.url.pathname === '/'} aria-current={$page.url.pathname === '/' ? 'page' : undefined}>
-        {t('nav.home')}
-      </a>
-      <a href="/decks" class:active={$page.url.pathname.startsWith('/decks')} aria-current={$page.url.pathname.startsWith('/decks') ? 'page' : undefined}>
-        {t('nav.decks')}
-      </a>
-      <a href="/study" class:active={$page.url.pathname.startsWith('/study')} aria-current={$page.url.pathname.startsWith('/study') ? 'page' : undefined}>
-        {t('nav.study')}
-      </a>
-      <a href="/add" class:active={$page.url.pathname === '/add'} aria-current={$page.url.pathname === '/add' ? 'page' : undefined}>
-        {t('nav.add')}
-      </a>
-      <a href="/import" class:active={$page.url.pathname === '/import'} aria-current={$page.url.pathname === '/import' ? 'page' : undefined}>
-        {t('nav.import')}
-      </a>
+    <div class="actions">
+      <nav class="nav nav-desktop" aria-label="Primary">
+        {@render navLinks()}
+      </nav>
+
       <ThemeToggle />
       <LanguageSwitcher />
 
@@ -86,12 +122,13 @@
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             aria-label={auth.user.name}
+            bind:this={avatarBtn}
             onclick={toggleMenu}
           >
             {#if auth.user.avatarUrl}
               <img src={auth.user.avatarUrl} alt="" class="avatar" referrerpolicy="no-referrer" />
             {:else}
-              <span class="avatar avatar--initials">{initials(auth.user.name)}</span>
+              <span class="avatar avatar--initials" aria-hidden="true">{initials(auth.user.name)}</span>
             {/if}
           </button>
 
@@ -101,14 +138,34 @@
                 <div class="menu-name">{auth.user.name}</div>
                 <div class="menu-email">{auth.user.email}</div>
               </div>
-              <button type="button" class="menu-item" role="menuitem" onclick={handleSignOut}>
+              <button type="button" class="menu-item" role="menuitem" bind:this={firstMenuItem} onclick={handleSignOut}>
                 {t('auth.signOut')}
               </button>
             </div>
           {/if}
         </div>
       {/if}
-    </nav>
+
+      <div class="nav-mobile">
+        <button
+          type="button"
+          class="nav-toggle"
+          aria-label={navOpen ? t('a11y.closeMenu') : t('a11y.openMenu')}
+          aria-haspopup="true"
+          aria-expanded={navOpen}
+          aria-controls="mobile-nav"
+          onclick={toggleNav}
+        >
+          <span class="nav-toggle-glyph" aria-hidden="true">{navOpen ? '✕' : '☰'}</span>
+        </button>
+
+        {#if navOpen}
+          <nav id="mobile-nav" class="mobile-nav-panel" aria-label="Primary">
+            {@render navLinks(closeNav)}
+          </nav>
+        {/if}
+      </div>
+    </div>
   </div>
 </header>
 
@@ -150,6 +207,12 @@
     font-weight: 300;
   }
 
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
   .nav {
     display: flex;
     gap: var(--space-6);
@@ -172,7 +235,7 @@
     color: var(--color-accent);
   }
 
-  .nav a.active::after {
+  .nav-desktop a.active::after {
     content: '';
     position: absolute;
     bottom: 0;
@@ -180,6 +243,66 @@
     right: 0;
     height: 2px;
     background-color: var(--color-accent);
+  }
+
+  /* Mobile nav (hamburger) — hidden on desktop */
+  .nav-mobile {
+    position: relative;
+    display: none;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .nav-toggle:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .nav-toggle-glyph {
+    font-size: var(--text-xl);
+    line-height: 1;
+  }
+
+  .mobile-nav-panel {
+    position: absolute;
+    top: calc(100% + var(--space-2));
+    right: 0;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-surface-elevated);
+    border: 1px solid var(--color-border-light);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: var(--space-2);
+    z-index: 200;
+  }
+
+  .mobile-nav-panel a {
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-base);
+  }
+
+  .mobile-nav-panel a:hover {
+    background-color: var(--color-washi-dark);
+  }
+
+  .mobile-nav-panel a.active {
+    color: var(--color-accent);
+    font-weight: 500;
   }
 
   .user-menu {
@@ -268,7 +391,21 @@
     background-color: var(--color-washi-dark);
   }
 
-  /* Mobile styles */
+  /* Collapse the text links into a hamburger when they'd crowd the bar. */
+  @media (max-width: 720px) {
+    .nav-desktop {
+      display: none;
+    }
+
+    .nav-mobile {
+      display: block;
+    }
+
+    .actions {
+      gap: var(--space-2);
+    }
+  }
+
   @media (max-width: 640px) {
     .header-content {
       padding: var(--space-3);
@@ -284,21 +421,6 @@
 
     .logo-romaji {
       font-size: var(--text-xl);
-    }
-
-    .nav {
-      gap: var(--space-3);
-    }
-
-    .nav a {
-      font-size: var(--text-xs);
-      padding: var(--space-1) 0;
-    }
-  }
-
-  @media (max-width: 380px) {
-    .nav {
-      gap: var(--space-2);
     }
   }
 </style>
