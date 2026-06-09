@@ -14,7 +14,7 @@
     /** Optional hiragana reading shown as furigana */
     reading?: string;
     /** Size variant for the text */
-    size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
+    size?: 'sm' | 'md' | 'lg' | '4xl' | '5xl';
   }
 
   let { japanese, reading, size = 'md' }: Props = $props();
@@ -73,30 +73,6 @@
 
   .japanese-word--lg rt {
     font-size: var(--text-sm);
-  }
-
-  .japanese-word--xl {
-    font-size: var(--text-3xl);
-  }
-
-  .japanese-word--xl rt {
-    font-size: var(--text-base);
-  }
-
-  .japanese-word--2xl {
-    font-size: var(--text-3xl);
-  }
-
-  .japanese-word--2xl rt {
-    font-size: var(--text-base);
-  }
-
-  .japanese-word--3xl {
-    font-size: var(--text-4xl);
-  }
-
-  .japanese-word--3xl rt {
-    font-size: var(--text-base);
   }
 
   .japanese-word--4xl {

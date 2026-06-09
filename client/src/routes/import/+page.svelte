@@ -232,6 +232,7 @@
           <div
             class="import-progress"
             role="progressbar"
+            aria-label={t('import.progressLabel')}
             aria-valuemin="0"
             aria-valuemax={importTotal}
             aria-valuenow={importDone}

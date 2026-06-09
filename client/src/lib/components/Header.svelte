@@ -13,6 +13,7 @@
   let navOpen = $state(false);
   let avatarBtn = $state<HTMLButtonElement>();
   let firstMenuItem = $state<HTMLButtonElement>();
+  let navToggle = $state<HTMLButtonElement>();
 
   // Centralized active-link detection so every link uses the same rule.
   function isActive(href: string, exact = false): boolean {
@@ -35,8 +36,9 @@
     if (navOpen) menuOpen = false;
   }
 
-  function closeNav() {
+  function closeNav(returnFocus = false) {
     navOpen = false;
+    if (returnFocus) navToggle?.focus();
   }
 
   async function handleSignOut() {
@@ -48,7 +50,7 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key !== 'Escape') return;
     if (menuOpen) closeMenu(true);
-    if (navOpen) closeNav();
+    if (navOpen) closeNav(true);
   }
 
   function handleDocumentClick(e: MouseEvent) {
@@ -107,7 +109,7 @@
     </a>
 
     <div class="actions">
-      <nav class="nav nav-desktop" aria-label="Primary">
+      <nav class="nav nav-desktop" aria-label={t('a11y.primaryNav')}>
         {@render navLinks()}
       </nav>
 
@@ -154,14 +156,15 @@
           aria-haspopup="true"
           aria-expanded={navOpen}
           aria-controls="mobile-nav"
+          bind:this={navToggle}
           onclick={toggleNav}
         >
           <span class="nav-toggle-glyph" aria-hidden="true">{navOpen ? '✕' : '☰'}</span>
         </button>
 
         {#if navOpen}
-          <nav id="mobile-nav" class="mobile-nav-panel" aria-label="Primary">
-            {@render navLinks(closeNav)}
+          <nav id="mobile-nav" class="mobile-nav-panel" aria-label={t('a11y.primaryNav')}>
+            {@render navLinks(() => closeNav())}
           </nav>
         {/if}
       </div>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="%sveltekit.assets%/favicon.svg" />
@@ -18,6 +18,11 @@
           t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'light';
         }
         document.documentElement.dataset.theme = t;
+        // Match the document language to the stored UI locale before hydration
+        var l = localStorage.getItem('tangocho-locale');
+        if (l === 'ja' || l === 'en' || l === 'ru') {
+          document.documentElement.lang = l;
+        }
       } catch (_) {}
     </script>
     %sveltekit.head%

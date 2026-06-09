@@ -17,10 +17,18 @@
   };
 
   let open = $state(false);
+  let toggleBtn = $state<HTMLButtonElement>();
+  let optionEls: HTMLButtonElement[] = [];
+
+  // Move focus into the dropdown on open so keyboard users land on an option.
+  $effect(() => {
+    if (open) optionEls[0]?.focus();
+  });
 
   function selectLocale(loc: Locale) {
     setLocale(loc);
     open = false;
+    toggleBtn?.focus();
   }
 
   function handleClickOutside(event: MouseEvent) {
@@ -33,6 +41,7 @@
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape' && open) {
       open = false;
+      toggleBtn?.focus();
     }
   }
 </script>
@@ -42,6 +51,7 @@
 <div class="language-switcher">
   <button
     class="current-locale"
+    bind:this={toggleBtn}
     onclick={() => (open = !open)}
     aria-expanded={open}
     aria-haspopup="true"
@@ -53,12 +63,13 @@
 
   {#if open}
     <ul class="locale-dropdown">
-      {#each locales as loc}
+      {#each locales as loc, i}
         <li>
           <button
             class="locale-option"
             class:active={loc === locale}
             aria-current={loc === locale ? 'true' : undefined}
+            bind:this={optionEls[i]}
             onclick={() => selectLocale(loc)}
           >
             {localeLabels[loc]}

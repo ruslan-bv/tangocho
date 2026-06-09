@@ -13,6 +13,7 @@ export interface Translations {
     changeLanguage: string;
     openMenu: string;
     closeMenu: string;
+    primaryNav: string;
   };
   common: {
     loading: string;
@@ -201,6 +202,7 @@ export interface Translations {
     textTooLong: string;
     needDeck: string;
     statusAdded: string;
+    progressLabel: string;
     statusSkipped: string;
     statusFailed: string;
     alreadyInDeckCount: string;
@@ -221,6 +223,7 @@ export const en: Translations = {
     changeLanguage: 'Change language',
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
+    primaryNav: 'Primary',
   },
   common: {
     loading: 'Loading...',
@@ -409,6 +412,7 @@ export const en: Translations = {
     textTooLong: 'Text is too long (max 5000 characters)',
     needDeck: 'Choose a deck first',
     statusAdded: 'Added',
+    progressLabel: 'Import progress',
     statusSkipped: 'Already in deck',
     statusFailed: 'Not found',
     alreadyInDeckCount: '{count} already in deck',
@@ -429,6 +433,7 @@ export const ja: Translations = {
     changeLanguage: '言語を変更',
     openMenu: 'メニューを開く',
     closeMenu: 'メニューを閉じる',
+    primaryNav: 'メインナビゲーション',
   },
   common: {
     loading: '読み込み中...',
@@ -617,6 +622,7 @@ export const ja: Translations = {
     textTooLong: 'テキストが長すぎます（最大5000文字）',
     needDeck: 'デッキを選択してください',
     statusAdded: '追加済み',
+    progressLabel: '取り込みの進行状況',
     statusSkipped: 'デッキに既存',
     statusFailed: '見つかりません',
     alreadyInDeckCount: '{count}件はデッキに既存',
@@ -637,6 +643,7 @@ export const ru: Translations = {
     changeLanguage: 'Сменить язык',
     openMenu: 'Открыть меню',
     closeMenu: 'Закрыть меню',
+    primaryNav: 'Основная навигация',
   },
   common: {
     loading: 'Загрузка...',
@@ -825,6 +832,7 @@ export const ru: Translations = {
     textTooLong: 'Текст слишком длинный (максимум 5000 символов)',
     needDeck: 'Сначала выберите колоду',
     statusAdded: 'Добавлено',
+    progressLabel: 'Прогресс импорта',
     statusSkipped: 'Уже в колоде',
     statusFailed: 'Не найдено',
     alreadyInDeckCount: '{count} уже в колоде',

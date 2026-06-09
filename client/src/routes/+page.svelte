@@ -33,18 +33,21 @@
     <h1>{t('home.welcome')}</h1>
     <p class="subtitle">{t('home.subtitle')}</p>
 
-    {#if dueCount > 0}
-      <div class="due-notice">
-        <span class="due-count">{dueCount}</span>
-        <span class="due-text">{t('home.dueCardsLabel')}</span>
-      </div>
-      <Button href="/study" variant="primary" size="lg">
-        {t('home.startStudy')}
-      </Button>
-    {:else}
-      <Button href="/add" variant="primary" size="lg">
-        {t('home.addNewWord')}
-      </Button>
+    <!-- Wait for stats so the CTA doesn't flash "Add" before swapping to "Study" -->
+    {#if !loading}
+      {#if dueCount > 0}
+        <div class="due-notice">
+          <span class="due-count">{dueCount}</span>
+          <span class="due-text">{t('home.dueCardsLabel')}</span>
+        </div>
+        <Button href="/study" variant="primary" size="lg">
+          {t('home.startStudy')}
+        </Button>
+      {:else}
+        <Button href="/add" variant="primary" size="lg">
+          {t('home.addNewWord')}
+        </Button>
+      {/if}
     {/if}
   </section>
 
