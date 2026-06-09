@@ -91,7 +91,9 @@ export class TatoebaSentenceProvider implements SentenceProvider {
       showtrans: 'matching'
     });
 
-    const response = await fetch(`${this.baseUrl}/sentences?${params}`);
+    const response = await fetch(`${this.baseUrl}/sentences?${params}`, {
+      signal: AbortSignal.timeout(config.api.timeoutMs)
+    });
 
     if (!response.ok) {
       throw new Error(`Tatoeba API returned ${response.status}`);
@@ -154,7 +156,9 @@ export class ImmersionKitSentenceProvider implements SentenceProvider {
       showUrlInMedia: 'true'
     });
 
-    const response = await fetch(`${this.baseUrl}/search?${params}`);
+    const response = await fetch(`${this.baseUrl}/search?${params}`, {
+      signal: AbortSignal.timeout(config.api.timeoutMs)
+    });
 
     if (!response.ok) {
       throw new Error(`Immersion Kit API returned ${response.status}`);

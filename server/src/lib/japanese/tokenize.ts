@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import kuromoji, { type IpadicFeatures, type Tokenizer } from 'kuromoji';
+import { hasKanji } from './kanji.js';
 
 export interface ContentWord {
   surface: string;
@@ -46,10 +47,6 @@ function katakanaToHiragana(input: string): string {
   return input.replace(/[ァ-ヶ]/g, (c) =>
     String.fromCharCode(c.charCodeAt(0) - 0x60)
   );
-}
-
-function hasKanji(input: string): boolean {
-  return /[一-龯]/.test(input);
 }
 
 export async function tokenize(text: string): Promise<ContentWord[]> {

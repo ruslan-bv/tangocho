@@ -10,6 +10,7 @@
 
 import { kanjiClient, type KanjiDetails } from './kanji.js';
 import { sentenceAggregator, type Sentence } from './sentences/index.js';
+import { extractKanji } from './japanese/kanji.js';
 import { config } from '../config.js';
 
 interface JishoWord {
@@ -71,7 +72,7 @@ class JishoClient {
   async search(query: string): Promise<JishoApiResponse['data']> {
     const url = `${this.baseUrl}/search/words?keyword=${encodeURIComponent(query)}`;
 
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(config.api.timeoutMs) });
 
     if (!response.ok) {
       throw new Error(`Jisho API error: ${response.status}`);
@@ -124,9 +125,11 @@ class JishoClient {
       }
     }
 
-    // Extract kanji characters and fetch their details from kanjiapi.dev
-    const kanjiChars = word.match(/[\u4e00-\u9faf]/g) || [];
-    const kanjiDetails = await kanjiClient.getMultipleKanji(kanjiChars);
+    // Kanji details and example sentences come from independent APIs; fetch both at once
+    const [kanjiDetails, sentenceResult] = await Promise.all([
+      kanjiClient.getMultipleKanji(extractKanji(word)),
+      sentenceAggregator.search(word, config.limits.savedSentences)
+    ]);
 
     const kanji: KanjiInfo[] = kanjiDetails.map((k: KanjiDetails) => ({
       character: k.character,
@@ -136,8 +139,6 @@ class JishoClient {
       jlptLevel: k.jlptLevel ? `N${k.jlptLevel}` : null
     }));
 
-    // Fetch example sentences using the SentenceAggregator (DIP: depends on abstraction)
-    const sentenceResult = await sentenceAggregator.search(word, config.limits.savedSentences);
     const sentences = sentenceResult.sentences;
 
     return {

@@ -6,6 +6,8 @@
 export const config = {
   /** External API endpoints */
   api: {
+    /** Timeout for all upstream API requests, in milliseconds */
+    timeoutMs: 10_000,
     jisho: {
       baseUrl: 'https://jisho.org/api/v1',
     },

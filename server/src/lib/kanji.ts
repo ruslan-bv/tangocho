@@ -30,7 +30,8 @@ export interface KanjiDetails {
 
 class KanjiClient {
   private baseUrl = config.api.kanjiapi.baseUrl;
-  private cache = new Map<string, KanjiDetails>();
+  // null entries cache characters kanjiapi.dev doesn't know, so they aren't re-fetched
+  private cache = new Map<string, KanjiDetails | null>();
 
   async getKanjiDetails(character: string): Promise<KanjiDetails | null> {
     // Check cache first
@@ -39,9 +40,12 @@ class KanjiClient {
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/kanji/${encodeURIComponent(character)}`);
+      const response = await fetch(`${this.baseUrl}/kanji/${encodeURIComponent(character)}`, {
+        signal: AbortSignal.timeout(config.api.timeoutMs)
+      });
 
       if (!response.ok) {
+        this.cache.set(character, null);
         return null;
       }
 
