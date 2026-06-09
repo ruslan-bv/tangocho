@@ -1,6 +1,10 @@
 // SM-2 Spaced Repetition Algorithm
 // Based on the SuperMemo 2 algorithm by Piotr Wozniak
 
+import { config } from '../config.js';
+
+const { minEaseFactor, maxInterval, easyBonus, firstInterval, secondInterval } = config.srs;
+
 interface SRSResult {
   easeFactor: number;
   interval: number;
@@ -37,33 +41,30 @@ export function calculateNextReview(
   } else {
     // Passed - calculate new interval
     if (repetitions === 0) {
-      newInterval = 1;
+      newInterval = firstInterval;
     } else if (repetitions === 1) {
-      newInterval = 6;
+      newInterval = secondInterval;
     } else {
       newInterval = Math.round(interval * easeFactor);
     }
 
     newRepetitions = repetitions + 1;
+  }
 
-    // Adjust ease factor
-    // EF' = EF + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))
-    newEaseFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-
-    // Ease factor minimum is 1.3
-    if (newEaseFactor < 1.3) {
-      newEaseFactor = 1.3;
-    }
+  // Adjust ease factor for every review, so repeated failures lower it
+  // EF' = EF + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))
+  newEaseFactor = easeFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
+  if (newEaseFactor < minEaseFactor) {
+    newEaseFactor = minEaseFactor;
   }
 
   // Apply bonus for Easy rating
   if (rating === 4) {
-    newInterval = Math.round(newInterval * 1.3);
+    newInterval = Math.round(newInterval * easyBonus);
   }
 
-  // Maximum interval: 365 days
-  if (newInterval > 365) {
-    newInterval = 365;
+  if (newInterval > maxInterval) {
+    newInterval = maxInterval;
   }
 
   return {

@@ -16,7 +16,7 @@ sentencesRouter.get('/search',
     const query = (req.query.q as string).trim();
     const limit = Math.min(
       parseInt(req.query.limit as string) || config.limits.defaultSentences,
-      config.limits.defaultSentences
+      config.limits.maxSentences
     );
 
     const result = await sentenceAggregator.search(query, limit);

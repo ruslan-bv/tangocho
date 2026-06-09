@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { config } from '../config.js';
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/tangocho'
@@ -53,7 +54,7 @@ export async function initDatabase() {
       id SERIAL PRIMARY KEY,
       word_id INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
       deck_id INTEGER NOT NULL REFERENCES decks(id) ON DELETE CASCADE,
-      ease_factor REAL DEFAULT 2.5,
+      ease_factor REAL DEFAULT ${config.srs.defaultEaseFactor},
       interval INTEGER DEFAULT 0,
       repetitions INTEGER DEFAULT 0,
       due_date TIMESTAMPTZ DEFAULT NOW(),
