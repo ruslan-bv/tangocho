@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { page } from '$app/stores';
+  import { beforeNavigate } from '$app/navigation';
   import type { CardWithWord, DeckWithStats, ReviewRating } from '$lib/api/types';
   import { api } from '$lib/api/client';
   import Button from '$lib/components/Button.svelte';
@@ -8,31 +10,56 @@
   import { t } from '$lib/i18n';
   import { showError } from '$lib/stores/toast.svelte';
 
+  // How long a rating can be taken back before it's committed to the server.
+  const UNDO_MS = 5000;
+
   let cards = $state<CardWithWord[]>([]);
   let decks = $state<DeckWithStats[]>([]);
   let currentIndex = $state(0);
   let showAnswer = $state(false);
   let loading = $state(true);
-  let reviewing = $state(false);
   let sessionComplete = $state(false);
   let reviewedCount = $state(0);
   let deckId = $state<number | undefined>(undefined);
   let selectingDeck = $state(false);
   let startedWithCards = $state(false);
 
-  const currentCard = $derived(cards[currentIndex]);
-  const remainingCards = $derived(cards.length - currentIndex);
-  const decksWithDue = $derived(decks.filter(d => d.dueCards > 0));
+  // Deferred-commit undo: the latest rating waits a few seconds before being
+  // sent, so a mis-tap can be reversed. Any navigation flushes it first.
+  type Pending = { card: CardWithWord; rating: ReviewRating; index: number };
+  let pending = $state<Pending | null>(null);
+  let undoTimer: ReturnType<typeof setTimeout> | undefined;
 
-  // Track the deck param from URL to react to navigation changes
+  const currentCard = $derived(cards[currentIndex]);
+  const totalCards = $derived(cards.length);
+  const progressPercent = $derived(totalCards ? (currentIndex / totalCards) * 100 : 0);
+  const decksWithDue = $derived(decks.filter((d) => d.dueCards > 0));
+
   const deckParam = $derived($page.url.searchParams.get('deck'));
 
-  // Load data when URL changes (handles both initial load and navigation)
+  // Reload only when the deck actually changes, so unrelated query-string
+  // changes don't wipe an in-progress session.
+  let loadedDeckParam: string | null | undefined = undefined;
   $effect(() => {
-    loadData(deckParam);
+    const p = deckParam;
+    if (p !== loadedDeckParam) {
+      loadedDeckParam = p;
+      loadData(p);
+    }
   });
 
+  function ratingLabel(rating: ReviewRating): string {
+    return rating === 1
+      ? t('study.again')
+      : rating === 2
+        ? t('study.hard')
+        : rating === 3
+          ? t('study.good')
+          : t('study.easy');
+  }
+
   async function loadData(deckParamValue: string | null) {
+    clearPending();
     // Reset state for new load
     loading = true;
     selectingDeck = false;
@@ -40,6 +67,7 @@
     startedWithCards = false;
     currentIndex = 0;
     showAnswer = false;
+    reviewedCount = 0;
     cards = [];
 
     try {
@@ -68,57 +96,110 @@
     showAnswer = true;
   }
 
-  async function rate(rating: ReviewRating) {
-    if (!currentCard || reviewing) return;
+  function clearPending() {
+    if (undoTimer) {
+      clearTimeout(undoTimer);
+      undoTimer = undefined;
+    }
+  }
 
-    reviewing = true;
+  async function commitPending() {
+    if (!pending) return;
+    const p = pending;
+    pending = null; // captured synchronously before the await
+    clearPending();
     try {
-      await api.reviewCard({
-        cardId: currentCard.id,
-        rating
-      });
-
-      reviewedCount++;
-
-      if (currentIndex < cards.length - 1) {
-        currentIndex++;
-        showAnswer = false;
-      } else {
-        sessionComplete = true;
-      }
+      await api.reviewCard({ cardId: p.card.id, rating: p.rating });
     } catch (error) {
       console.error('Failed to submit review:', error);
       showError(t('toast.reviewFailed'));
-    } finally {
-      reviewing = false;
     }
+  }
+
+  function rate(rating: ReviewRating) {
+    if (!currentCard || !showAnswer || sessionComplete) return;
+    // Commit the previous pending review (fire-and-forget) before queuing this one.
+    void commitPending();
+
+    pending = { card: currentCard, rating, index: currentIndex };
+    clearPending();
+    undoTimer = setTimeout(() => void commitPending(), UNDO_MS);
+
+    reviewedCount++;
+    if (currentIndex < cards.length - 1) {
+      currentIndex++;
+      showAnswer = false;
+    } else {
+      sessionComplete = true;
+    }
+  }
+
+  function undo() {
+    if (!pending) return;
+    clearPending();
+    const p = pending;
+    pending = null;
+    sessionComplete = false;
+    currentIndex = p.index;
+    showAnswer = true;
+    reviewedCount = Math.max(0, reviewedCount - 1);
+  }
+
+  function isEditableTarget(target: EventTarget | null): boolean {
+    const el = target as HTMLElement | null;
+    if (!el || !el.tagName) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (loading || sessionComplete) return;
+    if (e.repeat || isEditableTarget(e.target)) return;
+    if (loading || selectingDeck) return;
+
+    // Undo works whenever a rating is still pending (including the done screen).
+    if (pending && (e.key === 'u' || e.key === 'U' || e.code === 'Backspace')) {
+      e.preventDefault();
+      undo();
+      return;
+    }
+
+    if (sessionComplete || !currentCard) return;
 
     if (!showAnswer) {
-      if (e.code === 'Space' || e.code === 'Enter') {
+      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') {
         e.preventDefault();
         reveal();
       }
-    } else {
-      switch (e.code) {
-        case 'Digit1':
-          rate(1);
-          break;
-        case 'Digit2':
-          rate(2);
-          break;
-        case 'Digit3':
-          rate(3);
-          break;
-        case 'Digit4':
-          rate(4);
-          break;
-      }
+      return;
+    }
+
+    switch (e.code) {
+      case 'Digit1':
+      case 'Numpad1':
+        rate(1);
+        break;
+      case 'Digit2':
+      case 'Numpad2':
+        rate(2);
+        break;
+      case 'Digit3':
+      case 'Numpad3':
+        rate(3);
+        break;
+      case 'Digit4':
+      case 'Numpad4':
+        rate(4);
+        break;
     }
   }
+
+  // Never lose a queued rating: flush it on navigation or teardown.
+  beforeNavigate(() => {
+    void commitPending();
+  });
+  onDestroy(() => {
+    void commitPending();
+  });
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -151,7 +232,7 @@
     </div>
   {:else if sessionComplete && !startedWithCards}
     <div class="complete">
-      <div class="complete-icon all-done">—</div>
+      <div class="complete-icon all-done" aria-hidden="true">月</div>
       <h1>{t('study.allReviewedTitle')}</h1>
       <p class="complete-stats">
         {t('study.allReviewedDesc')}
@@ -167,17 +248,23 @@
     </div>
   {:else if sessionComplete}
     <div class="complete">
-      <div class="complete-icon">✓</div>
+      <div class="complete-icon" aria-hidden="true">✓</div>
       <h1>{t('study.complete')}</h1>
       <p class="complete-stats">
         {t('study.reviewedToday', { count: reviewedCount })}
       </p>
+      {#if pending}
+        <div class="undo-bar" role="status" aria-live="polite">
+          <span>{ratingLabel(pending.rating)}</span>
+          <button type="button" class="undo-btn" onclick={undo}>{t('study.undo')}</button>
+        </div>
+      {/if}
       <div class="complete-actions">
-        <Button href={deckId ? '/decks' : '/'} variant="secondary">
-          {deckId ? t('decks.backToList') : t('study.goHome')}
+        <Button variant="primary" onclick={() => loadData(deckParam)}>
+          {t('study.studyAgain')}
         </Button>
-        <Button href={deckId ? `/add?deck=${deckId}` : '/add'} variant="primary">
-          {t('home.addNewWord')}
+        <Button href={deckId ? `/decks/${deckId}` : '/'} variant="secondary">
+          {deckId ? t('card.backToDeck') : t('study.goHome')}
         </Button>
       </div>
     </div>
@@ -186,12 +273,21 @@
       <Button href={deckId ? `/decks/${deckId}` : '/'} variant="ghost" size="sm">
         {t('study.endSession')}
       </Button>
-      <span class="progress">
-        {t('study.remaining', { count: remainingCards })}
+      <span class="progress-text">
+        {t('study.cardProgress', { current: Math.min(currentIndex + 1, totalCards), total: totalCards })}
       </span>
     </div>
+    <div
+      class="progress-track"
+      role="progressbar"
+      aria-valuemin="0"
+      aria-valuemax={totalCards}
+      aria-valuenow={currentIndex}
+    >
+      <div class="progress-fill" style:width="{progressPercent}%"></div>
+    </div>
 
-    <FlashCard card={currentCard} {showAnswer} />
+    <FlashCard card={currentCard} {showAnswer} onReveal={reveal} />
 
     <div class="controls">
       {#if !showAnswer}
@@ -201,41 +297,32 @@
         </Button>
       {:else}
         <div class="rating-buttons">
-          <button
-            class="rating-btn again"
-            onclick={() => rate(1)}
-            disabled={reviewing}
-          >
+          <button class="rating-btn again" onclick={() => rate(1)}>
             <span class="rating-label">{t('study.again')}</span>
             <span class="rating-key">1</span>
           </button>
-          <button
-            class="rating-btn hard"
-            onclick={() => rate(2)}
-            disabled={reviewing}
-          >
+          <button class="rating-btn hard" onclick={() => rate(2)}>
             <span class="rating-label">{t('study.hard')}</span>
             <span class="rating-key">2</span>
           </button>
-          <button
-            class="rating-btn good"
-            onclick={() => rate(3)}
-            disabled={reviewing}
-          >
+          <button class="rating-btn good" onclick={() => rate(3)}>
             <span class="rating-label">{t('study.good')}</span>
             <span class="rating-key">3</span>
           </button>
-          <button
-            class="rating-btn easy"
-            onclick={() => rate(4)}
-            disabled={reviewing}
-          >
+          <button class="rating-btn easy" onclick={() => rate(4)}>
             <span class="rating-label">{t('study.easy')}</span>
             <span class="rating-key">4</span>
           </button>
         </div>
       {/if}
     </div>
+
+    {#if pending}
+      <div class="undo-bar undo-bar--floating" role="status" aria-live="polite">
+        <span>{ratingLabel(pending.rating)}</span>
+        <button type="button" class="undo-btn" onclick={undo}>{t('study.undo')}</button>
+      </div>
+    {/if}
   {:else}
     <div class="empty">
       <h2>{t('study.noCardsTitle')}</h2>
@@ -302,18 +389,70 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: var(--space-2);
+  }
+
+  .progress-text {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .progress-track {
+    height: 4px;
+    background-color: var(--color-border-light);
+    border-radius: var(--radius-full);
+    overflow: hidden;
     margin-bottom: var(--space-6);
   }
 
-  .progress {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
+  .progress-fill {
+    height: 100%;
+    background-color: var(--color-accent);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal);
   }
 
   .controls {
     margin-top: var(--space-8);
+    min-height: 88px;
     display: flex;
+    align-items: center;
     justify-content: center;
+  }
+
+  .undo-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    background-color: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-md);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .undo-bar--floating {
+    position: sticky;
+    bottom: var(--space-4);
+    margin: var(--space-6) auto 0;
+  }
+
+  .undo-btn {
+    background: none;
+    border: none;
+    color: var(--color-accent);
+    font-weight: 600;
+    font-size: var(--text-sm);
+    cursor: pointer;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .undo-btn:hover {
+    background-color: var(--color-washi-dark);
   }
 
   .shortcut {
@@ -465,17 +604,15 @@
       gap: var(--space-3);
     }
 
-    .complete-actions :global(a) {
+    .complete-actions :global(a),
+    .complete-actions :global(button) {
       width: 100%;
       justify-content: center;
     }
 
-    .study-header {
-      margin-bottom: var(--space-4);
-    }
-
     .controls {
       margin-top: var(--space-4);
+      min-height: 0;
     }
 
     .rating-buttons {
