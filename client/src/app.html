@@ -10,10 +10,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet" />
     <title>単語帳 - Tangocho</title>
     <script>
-      // Apply persisted theme before first paint to avoid flash.
+      // Apply theme before first paint to avoid flash: stored preference wins,
+      // otherwise fall back to the OS color-scheme preference.
       try {
         var t = localStorage.getItem('tangocho-theme');
-        if (t === 'night' || t === 'light') document.documentElement.dataset.theme = t;
+        if (t !== 'night' && t !== 'light') {
+          t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'light';
+        }
+        document.documentElement.dataset.theme = t;
       } catch (_) {}
     </script>
     %sveltekit.head%

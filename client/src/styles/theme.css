@@ -115,6 +115,17 @@
   color-scheme: dark;
 }
 
+/* Night theme: brighten accent text on dark surfaces for legibility.
+   Accent-as-background (buttons, tags) keeps the deeper --color-ai so white
+   text stays readable; accent-as-text links use the lighter shade (≈5.4:1). */
+:root[data-theme='night'] a {
+  color: var(--color-ai-light);
+}
+
+:root[data-theme='night'] a:hover {
+  color: var(--color-sumi);
+}
+
 /* Base styles */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -325,5 +336,22 @@ textarea.input {
 @media (max-width: 640px) {
   .state-message {
     padding: var(--space-8);
+  }
+}
+
+/* Respect users who prefer reduced motion: drop animations, transitions,
+   and the hover lift used across cards/toasts. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .card--interactive:hover {
+    transform: none;
   }
 }

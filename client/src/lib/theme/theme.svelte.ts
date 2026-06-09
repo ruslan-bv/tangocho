@@ -7,10 +7,20 @@ function isValidTheme(value: string | null): value is Theme {
   return value === 'light' || value === 'night';
 }
 
+function prefersDark(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+}
+
 function readStoredTheme(): Theme {
   if (typeof window === 'undefined') return DEFAULT_THEME;
   const stored = localStorage.getItem(STORAGE_KEY);
-  return isValidTheme(stored) ? stored : DEFAULT_THEME;
+  if (isValidTheme(stored)) return stored;
+  // No explicit choice yet: follow the OS preference (matches app.html script).
+  return prefersDark() ? 'night' : DEFAULT_THEME;
 }
 
 let currentTheme = $state<Theme>(readStoredTheme());
@@ -39,6 +49,6 @@ export function toggleTheme(): void {
 export function initTheme(): void {
   if (typeof window === 'undefined') return;
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (isValidTheme(stored)) currentTheme = stored;
+  currentTheme = isValidTheme(stored) ? stored : prefersDark() ? 'night' : DEFAULT_THEME;
   applyTheme(currentTheme);
 }
